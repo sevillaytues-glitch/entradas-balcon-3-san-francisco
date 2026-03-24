@@ -2696,6 +2696,7 @@ async function downloadPDF() {
 
     // Registrar entradas secuencialmente (evita pérdidas en Sheets)
     const fullSession = sessionName + ' · ' + sessionDate + ' ' + sessionTime;
+    const batchId = new Date().toISOString(); // mismo timestamp para todo el lote
     for (let i = 0; i < qty; i++) {
       const ticketId = buildEntryID(prefix, sessionV, counter + i);
       const ticket = {
@@ -2709,7 +2710,7 @@ async function downloadPDF() {
         paymentStatus: paymentStatus,
         paymentDate:   paymentDateStr,
         status:        'No utilizado',
-        createdAt:     new Date().toISOString(),
+        createdAt:     batchId,
         accessedAt:    ''
       };
       // Guardar localmente
@@ -4081,8 +4082,8 @@ function activateBalcon(num) {
   var cfg = BALCON_CONFIG[num];
 
   // ── Update global asset variables ──
-  LOGO_B64 = window[cfg.logoKey];
-  IMG_B64  = window[cfg.imgKey];
+  LOGO_B64 = cfg.logoKey ? window[cfg.logoKey] : LOGO_B64_1;
+  IMG_B64  = cfg.imgKey  ? window[cfg.imgKey]  : IMG_B64_1;
 
   // ── Update storage keys ──
   STORAGE_KEY   = cfg.storageKey;
@@ -4313,8 +4314,9 @@ function resetAforo() {
 // ============================================================
 
 async function smartSavePDF(pdf, fileName) {
-  // En móvil con Web Share API: ofrece compartir/guardar nativo
-  if (navigator.share && navigator.canShare) {
+  // Detectar si es dispositivo movil real (no desktop Chrome que tambien tiene navigator.share)
+  var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile && navigator.share && navigator.canShare) {
     try {
       var blob    = pdf.output('blob');
       var file    = new File([blob], fileName, { type: 'application/pdf' });
@@ -4324,12 +4326,11 @@ async function smartSavePDF(pdf, fileName) {
         return;
       }
     } catch(e) {
-      // Si el usuario cancela el share, no hacer nada
       if (e.name === 'AbortError') return;
-      // Si falla por otro motivo, caer a descarga normal
+      // Fallback a descarga si share falla
     }
   }
-  // Escritorio o navegador sin Share API: descarga directa
+  // Escritorio o movil sin Share API: descarga directa
   pdf.save(fileName);
 }
 
