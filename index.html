@@ -4527,13 +4527,6 @@ async function downloadAllFiltered() {
   btn.disabled    = false;
   showToast('✓ PDF con ' + tickets.length + ' entrada' + (tickets.length > 1 ? 's' : '') + ' descargado');
 }
-ngle = (ticket.session||'').split(' · ')[0].replace(/[\s()]+/g,'_');
-  await smartSavePDF(pdf, '1 entrada - ' + sessionLabelSingle + ' - ' + cleanNameSingle + '.pdf');
-
-  btnEl.textContent = '\u2b07';
-  btnEl.disabled = false;
-  showToast('Entrada ' + id + ' descargada');
-}
 
 
 async function downloadBatchFromTable(btnEl) {
