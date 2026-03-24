@@ -1849,7 +1849,7 @@
           <div class="ticket-header-left">
             <div class="ticket-event-label">Entrada oficial · Temporada 2026</div>
             <div class="ticket-event-name">Experiencia Balcón<br>Semana Santa Sevilla 2026</div>
-            <div class="ticket-venue">Balcón 3ª Planta San Francisco · Plaza de San Francisco, 8 – 3ª Planta</div>
+            <div class="ticket-venue" id="t-venue">Balcón 3ª Planta San Francisco · Plaza de San Francisco, 8 – 3ª Planta</div>
           </div>
           <img id="t-logo" src="" class="ticket-header-logo" alt="Catering Tienda Nueva">
         </div>
@@ -1938,8 +1938,8 @@
         <!-- Pie -->
         <div class="ticket-footer">
           <div class="ticket-footer-org">
-            <div class="ticket-footer-name">Catering Tienda Nueva · Lebrija</div>
-            <div class="ticket-footer-tel">+34 609 50 62 25 · cateringtiendanueva.com</div>
+            <div class="ticket-footer-name" id="t-footer-name">Catering Tienda Nueva · Lebrija</div>
+            <div class="ticket-footer-tel" id="t-footer-tel">+34 609 50 62 25</div>
           </div>
           <div class="ticket-footer-note">
             Esta entrada es personal e intransferible.<br>
@@ -1991,7 +1991,10 @@
       </div>
       <button class="btn btn-excel" onclick="exportExcel()" id="btn-excel">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        Descargar Excel
+        Excel
+      </button>
+      <button class="btn btn-ghost" onclick="downloadAllFiltered()" id="btn-dl-all" style="display:flex;align-items:center;gap:6px;font-size:13px;padding:9px 14px;">
+        ⬇ Descargar PDF
       </button>
       <button class="btn btn-ghost btn-danger" onclick="clearAllTickets()" style="font-size:11px;padding:8px 12px;">
         🗑 Limpiar todo
@@ -2630,7 +2633,15 @@ async function downloadPDF() {
       // Build hidden ticket
       const wrapper = document.createElement('div');
       wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:595px;height:842px;overflow:hidden;background:#fff;';
-      wrapper.innerHTML = buildTicketHTML(name, company, type, price, sessionName, sessionDate, sessionTime, id, paymentMethod, paymentStatus, paymentDateStr, BALCON_CONFIG[currentBalcon]);
+      // Determine cfg: admin uses prefix to detect balcon, staff uses their own
+    var pdfCfg;
+    if (currentRole === 'admin') {
+      // Admin generator always uses prefix to identify the balcon
+      pdfCfg = prefix.startsWith('B2') ? BALCON_CONFIG[2] : BALCON_CONFIG[1];
+    } else {
+      pdfCfg = BALCON_CONFIG[currentBalcon] || BALCON_CONFIG[1];
+    }
+    wrapper.innerHTML = buildTicketHTML(name, company, type, price, sessionName, sessionDate, sessionTime, id, paymentMethod, paymentStatus, paymentDateStr, pdfCfg);
       document.body.appendChild(wrapper);
 
       // Generate QR
@@ -2664,7 +2675,11 @@ async function downloadPDF() {
       pdf.addImage(imgData, 'JPEG', 0, 0, 595, 842);
     }
 
-    pdf.save('entradas_semana_santa_' + sessionDate.replace(/ /g,'_') + '.pdf');
+    // Build descriptive filename: qty + session + client name
+    var cleanName    = buildFileName(name, 30);
+    var cleanSession = buildFileName(sessionName + ' ' + sessionDate, 40);
+    var fileName = qty + ' entrada' + (qty > 1 ? 's' : '') + ' - ' + cleanSession + ' - ' + cleanName + '.pdf';
+    await smartSavePDF(pdf, fileName);
 
     // Registrar entradas secuencialmente (evita pérdidas en Sheets)
     const fullSession = sessionName + ' · ' + sessionDate + ' ' + sessionTime;
@@ -2714,6 +2729,8 @@ async function downloadPDF() {
 // ============================================================
 function buildTicketHTML(name, company, type, price, sessionName, sessionDate, sessionTime, id, paymentMethod, paymentStatus, paymentDateStr, cfg) {
   cfg = cfg || BALCON_CONFIG[currentBalcon] || BALCON_CONFIG[1];
+  // Never use admin cfg for ticket data — admin tickets default to balcon 1
+  if (cfg.role === 'admin') cfg = BALCON_CONFIG[1];
   const priceStr = price % 1 === 0 ? price : price.toFixed(2);
   const logoSrc  = 'data:image/jpeg;base64,' + (window[cfg.logoKey] || LOGO_B64);
   const imgSrc   = 'data:image/jpeg;base64,' + (window[cfg.imgKey]  || IMG_B64);
@@ -4069,11 +4086,11 @@ function activateBalcon(num) {
   document.getElementById('t-logo').src      = 'data:image/jpeg;base64,' + LOGO_B64;
   document.getElementById('t-eventimg').src  = 'data:image/jpeg;base64,' + IMG_B64;
 
-  var venue = document.querySelector('.ticket-venue');
+  var venue = document.getElementById('t-venue');
   if (venue) venue.textContent = cfg.recinto + ' · ' + cfg.address;
-  var footName = document.querySelector('.ticket-footer-name');
+  var footName = document.getElementById('t-footer-name');
   if (footName) footName.textContent = cfg.org;
-  var footTel = document.querySelector('.ticket-footer-tel');
+  var footTel = document.getElementById('t-footer-tel');
   if (footTel) footTel.textContent = cfg.tel;
   var cap = document.querySelector('.ticket-image-caption');
   if (cap) cap.textContent = cfg.imgCaption;
@@ -4271,6 +4288,41 @@ function resetAforo() {
 // ===== DESCARGA DE ENTRADA DESDE TABLA =====
 // ============================================================
 
+// Helper: clean filename — no hyphens, no special chars, spaces preserved
+// ============================================================
+// ===== GUARDADO / COMPARTIR PDF (móvil y escritorio) =====
+// ============================================================
+
+async function smartSavePDF(pdf, fileName) {
+  // En móvil con Web Share API: ofrece compartir/guardar nativo
+  if (navigator.share && navigator.canShare) {
+    try {
+      var blob    = pdf.output('blob');
+      var file    = new File([blob], fileName, { type: 'application/pdf' });
+      var payload = { files: [file] };
+      if (navigator.canShare(payload)) {
+        await navigator.share(payload);
+        return;
+      }
+    } catch(e) {
+      // Si el usuario cancela el share, no hacer nada
+      if (e.name === 'AbortError') return;
+      // Si falla por otro motivo, caer a descarga normal
+    }
+  }
+  // Escritorio o navegador sin Share API: descarga directa
+  await smartSavePDF(pdf, fileName);
+}
+
+function buildFileName(str, maxLen) {
+  return (str || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // remove accents
+    .replace(/[^a-zA-Z0-9 ]/g, '')                       // keep alphanumeric + spaces
+    .replace(/\s+/g, ' ')                                // collapse spaces
+    .trim()
+    .slice(0, maxLen || 50);
+}
+
 async function downloadTicketFromTable(btnEl) {
   var id = btnEl.getAttribute('data-id');
   var tickets = loadLocalTickets();
@@ -4294,7 +4346,16 @@ async function downloadTicketFromTable(btnEl) {
   var priceStr = price % 1 === 0 ? parseInt(price) : price.toFixed(2);
 
   // Determine balcon config for correct branding
-  var balconCfg = BALCON_CONFIG[currentBalcon] || BALCON_CONFIG[1];
+  // Detect balcon from ticket's storage key context or ticket session
+  var balconCfg;
+  if (currentRole === 'admin') {
+    // Admin: determine balcon from the currently selected balcon filter
+    var adminFilter = document.getElementById('access-balcon-filter');
+    var adminBalconNum = adminFilter ? parseInt(adminFilter.value) : 1;
+    balconCfg = BALCON_CONFIG[adminBalconNum] || BALCON_CONFIG[1];
+  } else {
+    balconCfg = BALCON_CONFIG[currentBalcon] || BALCON_CONFIG[1];
+  }
 
   var wrapper = document.createElement('div');
   wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:595px;height:842px;overflow:hidden;background:#fff;';
@@ -4322,7 +4383,90 @@ async function downloadTicketFromTable(btnEl) {
   var { jsPDF } = window.jspdf;
   var pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [595, 842] });
   pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 595, 842);
-  pdf.save('entrada_' + id + '.pdf');
+  var cleanNameSingle = (ticket.name||'').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s]/g,'').trim().replace(/\s+/g,'_').slice(0,25);
+  var sessionLabelSi
+
+// ============================================================
+// ===== DESCARGA DE TODAS LAS ENTRADAS FILTRADAS (PDF ÚNICO) =====
+// ============================================================
+
+async function downloadAllFiltered() {
+  var filterVal = document.getElementById('access-session-filter').value;
+  var tickets   = loadLocalTickets();
+
+  if (filterVal !== 'all') {
+    var sessionName = filterVal.split('|')[0];
+    tickets = tickets.filter(function(t) { return (t.session||'').startsWith(sessionName); });
+  }
+
+  if (tickets.length === 0) { showToast('No hay entradas para descargar'); return; }
+
+  var btn = document.getElementById('btn-dl-all');
+  btn.textContent = '⏳ Generando...';
+  btn.disabled    = true;
+
+  var balconCfg;
+  if (currentRole === 'admin') {
+    var af = document.getElementById('access-balcon-filter');
+    balconCfg = BALCON_CONFIG[af ? parseInt(af.value) : 1] || BALCON_CONFIG[1];
+  } else {
+    balconCfg = BALCON_CONFIG[currentBalcon] || BALCON_CONFIG[1];
+  }
+
+  var { jsPDF } = window.jspdf;
+  var pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [595, 842] });
+
+  for (var i = 0; i < tickets.length; i++) {
+    var t = tickets[i];
+    var sessionParts = (t.session || '').split(' · ');
+    var sName = sessionParts[0] || '';
+    var dt    = (sessionParts[1] || '').split(' ');
+    var sDate = dt[0] + (dt[1] ? ' ' + dt[1] : '');
+    var sTime = dt[2] || '';
+    var price = parseFloat(t.price) || 0;
+
+    var wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:595px;height:842px;overflow:hidden;background:#fff;';
+    wrapper.innerHTML = buildTicketHTML(
+      t.name, t.company, t.type, price,
+      sName, sDate, sTime, t.id,
+      t.paymentMethod || '', t.paymentStatus || '', t.paymentDate || '',
+      balconCfg
+    );
+    document.body.appendChild(wrapper);
+
+    var qrDiv = wrapper.querySelector('.pdf-qr');
+    if (qrDiv) {
+      new QRCode(qrDiv, { text: t.id, width: 100, height: 100,
+        colorDark: '#0a0a0a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    }
+    await new Promise(function(r) { setTimeout(r, 250); });
+
+    var canvas = await html2canvas(wrapper.firstElementChild, {
+      scale: 2, useCORS: true, allowTaint: true,
+      backgroundColor: '#ffffff', width: 595, height: 842, logging: false
+    });
+    document.body.removeChild(wrapper);
+
+    if (i > 0) pdf.addPage([595, 842], 'portrait');
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 595, 842);
+  }
+
+  // Build filename: qty + session label + "todas"
+  var sessionLabel = filterVal === 'all'
+    ? 'todas las sesiones'
+    : buildFileName(filterVal.split('|')[0] + ' ' + (filterVal.split('|')[1]||''), 40);
+  // Add up to 2 client names
+  var clientNames = tickets.slice(0, 2).map(function(t) { return buildFileName(t.name||'', 20); }).join(' ');
+  var fname = tickets.length + ' entrada' + (tickets.length > 1 ? 's' : '') + ' - ' + sessionLabel + (clientNames ? ' - ' + clientNames : '') + '.pdf';
+  await smartSavePDF(pdf, fname);
+
+  btn.textContent = '⬇ Descargar PDF';
+  btn.disabled    = false;
+  showToast('✓ PDF con ' + tickets.length + ' entrada' + (tickets.length > 1 ? 's' : '') + ' descargado');
+}
+ngle = (ticket.session||'').split(' · ')[0].replace(/[\s()]+/g,'_');
+  await smartSavePDF(pdf, '1 entrada - ' + sessionLabelSingle + ' - ' + cleanNameSingle + '.pdf');
 
   btnEl.textContent = '\u2b07';
   btnEl.disabled = false;
