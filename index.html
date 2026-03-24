@@ -1406,13 +1406,15 @@
     <div>
       <div class="section-title">Datos del asistente</div>
       <div style="display:flex;flex-direction:column;gap:12px;margin-top:14px;">
-        <div class="form-group">
-          <label for="f-name">Nombre del asistente</label>
-          <input type="text" id="f-name" placeholder="Ej: Juan García López" oninput="updatePreview()">
-        </div>
-        <div class="form-group">
-          <label for="f-company">Empresa / Organización</label>
-          <input type="text" id="f-company" placeholder="Ej: Empresa S.L." oninput="updatePreview()">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="f-name">Nombre del asistente</label>
+            <input type="text" id="f-name" placeholder="Ej: Juan García López" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label for="f-company">Empresa / Organización</label>
+            <input type="text" id="f-company" placeholder="Ej: Empresa S.L." oninput="updatePreview()">
+          </div>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -1449,6 +1451,34 @@
               <option value="Sábado Santo|4 abril|16:30">Sábado Santo 4 abril 16:30</option>
             </select>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección pago -->
+    <div>
+      <div class="section-title">Datos del pago</div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:14px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="f-payment-method">Forma de pago</label>
+            <select id="f-payment-method" onchange="updatePreview()">
+              <option value="Transferencia">Transferencia</option>
+              <option value="Bizum">Bizum</option>
+              <option value="Efectivo">Efectivo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="f-payment-status">Estado del pago</label>
+            <select id="f-payment-status" onchange="updatePreview()">
+              <option value="Pagado">Pagado</option>
+              <option value="Pendiente">Pendiente</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="f-payment-date">Fecha del pago</label>
+          <input type="date" id="f-payment-date" oninput="updatePreview()">
         </div>
       </div>
     </div>
@@ -2104,13 +2134,16 @@ function renderQR(text) {
 // ACTUALIZAR VISTA PREVIA
 // ============================================================
 function updatePreview() {
-  const name     = document.getElementById('f-name').value.trim()    || 'Nombre del asistente';
-  const company  = document.getElementById('f-company').value.trim() || '—';
-  const type     = document.getElementById('f-type').value;
-  const price    = parseFloat(document.getElementById('f-price').value) || 0;
-  const sessionV = document.getElementById('f-session').value;
-  const prefix   = document.getElementById('f-prefix').value.toUpperCase();
-  const counter  = parseInt(document.getElementById('f-counter').value) || 1;
+  const name          = document.getElementById('f-name').value.trim()    || 'Nombre del asistente';
+  const company       = document.getElementById('f-company').value.trim() || '—';
+  const type          = document.getElementById('f-type').value;
+  const price         = parseFloat(document.getElementById('f-price').value) || 0;
+  const sessionV      = document.getElementById('f-session').value;
+  const prefix        = document.getElementById('f-prefix').value.toUpperCase();
+  const counter       = parseInt(document.getElementById('f-counter').value) || 1;
+  const paymentMethod = document.getElementById('f-payment-method').value;
+  const paymentStatus = document.getElementById('f-payment-status').value;
+  const paymentDate   = document.getElementById('f-payment-date').value;
 
   // Parsear sesión
   const sp = sessionV.split('|');
@@ -2121,16 +2154,24 @@ function updatePreview() {
   // ID
   const entryID = buildEntryID(prefix, sessionV, counter);
 
+  // Formatear fecha de pago
+  var paymentDateStr = '—';
+  if (paymentDate) {
+    var pd = new Date(paymentDate + 'T00:00:00');
+    paymentDateStr = pd.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
   // Actualizar DOM del ticket
-  document.getElementById('t-name').textContent = name;
-  document.getElementById('t-company').textContent = company;
-  document.getElementById('t-type').textContent = type;
-  document.getElementById('t-price').textContent = price % 1 === 0 ? price : price.toFixed(2);
+  document.getElementById('t-name').textContent         = name;
+  document.getElementById('t-company').textContent      = company;
+  document.getElementById('t-type').textContent         = type;
+  document.getElementById('t-price').textContent        = price % 1 === 0 ? price : price.toFixed(2);
   document.getElementById('t-session-name').textContent = sessionName;
   document.getElementById('t-session-date').textContent = sessionDate;
   document.getElementById('t-session-time').textContent = sessionTime;
-  document.getElementById('t-id').textContent = entryID;
-  document.getElementById('t-qr-label').textContent = entryID;
+  document.getElementById('t-id').textContent           = entryID;
+  document.getElementById('t-qr-label').textContent     = entryID;
+
 
   // Preview box del ID
   document.getElementById('id-preview-box').textContent = entryID;
@@ -2154,7 +2195,10 @@ function clearForm() {
   document.getElementById('f-type').value    = 'General';
   document.getElementById('f-price').value   = '';
   document.getElementById('f-qty').value     = 1;
-  document.getElementById('f-session').selectedIndex = 0;
+  document.getElementById('f-session').selectedIndex     = 0;
+  document.getElementById('f-payment-method').selectedIndex = 0;
+  document.getElementById('f-payment-status').selectedIndex = 0;
+  document.getElementById('f-payment-date').value        = '';
   // Prefijo y contador se conservan intencionalmente
   updatePreview();
   showToast('Formulario limpiado');
@@ -2206,6 +2250,14 @@ async function downloadPDF() {
   const company  = document.getElementById('f-company').value.trim() || '—';
   const type     = document.getElementById('f-type').value;
   const price    = parseFloat(document.getElementById('f-price').value) || 0;
+  const paymentMethod = document.getElementById('f-payment-method').value;
+  const paymentStatus = document.getElementById('f-payment-status').value;
+  const paymentDateRaw = document.getElementById('f-payment-date').value;
+  var paymentDateStr = '—';
+  if (paymentDateRaw) {
+    var pd = new Date(paymentDateRaw + 'T00:00:00');
+    paymentDateStr = pd.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
   const sp       = sessionV.split('|');
   const sessionName = sp[0] || '—';
   const sessionDate = sp[1] || '—';
@@ -2225,7 +2277,7 @@ async function downloadPDF() {
       // Build hidden ticket
       const wrapper = document.createElement('div');
       wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:595px;height:842px;overflow:hidden;background:#fff;';
-      wrapper.innerHTML = buildTicketHTML(name, company, type, price, sessionName, sessionDate, sessionTime, id);
+      wrapper.innerHTML = buildTicketHTML(name, company, type, price, sessionName, sessionDate, sessionTime, id, paymentMethod, paymentStatus, paymentDateStr);
       document.body.appendChild(wrapper);
 
       // Generate QR
@@ -2266,14 +2318,17 @@ async function downloadPDF() {
     for (let i = 0; i < qty; i++) {
       const ticketId = buildEntryID(prefix, sessionV, counter + i);
       registerTicket({
-        id:      ticketId,
-        name:    name,
-        company: company,
-        type:    type,
-        price:   price,
-        session: fullSession,
-        status:  'No utilizado',
-        createdAt: new Date().toISOString()
+        id:            ticketId,
+        name:          name,
+        company:       company,
+        type:          type,
+        price:         price,
+        session:       fullSession,
+        paymentMethod: paymentMethod,
+        paymentStatus: paymentStatus,
+        paymentDate:   paymentDateStr,
+        status:        'No utilizado',
+        createdAt:     new Date().toISOString()
       });
     }
 
@@ -2293,7 +2348,7 @@ async function downloadPDF() {
 // ============================================================
 // CONSTRUIR HTML DE UNA ENTRADA (para PDF)
 // ============================================================
-function buildTicketHTML(name, company, type, price, sessionName, sessionDate, sessionTime, id) {
+function buildTicketHTML(name, company, type, price, sessionName, sessionDate, sessionTime, id, paymentMethod, paymentStatus, paymentDateStr) {
   const priceStr = price % 1 === 0 ? price : price.toFixed(2);
   const logoSrc  = 'data:image/png;base64,' + LOGO_B64;
   const imgSrc   = 'data:image/jpeg;base64,' + IMG_B64;
