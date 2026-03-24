@@ -3311,13 +3311,27 @@ function renderAccessTable() {
   } else {
     table.style.display = 'table';
     empty.style.display = 'none';
-    tbody.innerHTML = tickets.map(function(t) { return renderRow(t); }).join('');
+
+    // Group by batchId (createdAt) to know which is the last of each batch
+    var lastOfBatch = {};
+    tickets.forEach(function(t, idx) {
+      if (t.createdAt) lastOfBatch[t.createdAt] = idx;
+    });
+
+    tbody.innerHTML = tickets.map(function(t, idx) {
+      var isLastInBatch = t.createdAt && lastOfBatch[t.createdAt] === idx;
+      // Count how many in this batch
+      var batchCount = t.createdAt
+        ? tickets.filter(function(x) { return x.createdAt === t.createdAt; }).length
+        : 1;
+      return renderRow(t, isLastInBatch, batchCount);
+    }).join('');
   }
 
   updateStats(tickets);
 }
 
-function renderRow(t) {
+function renderRow(t, isLastInBatch, batchCount) {
   var accessed   = t.status === 'Accedido';
   var rowClass   = accessed ? 'row-accessed' : '';
   var badgeClass = accessed ? 'badge-accessed' : 'badge-pending';
@@ -3334,11 +3348,16 @@ function renderRow(t) {
     actionBtn = '<button class="btn-access-mark btn-mark-used" onclick="toggleAccess(this, true)" data-id="' + t.id + '">\u2713 Marcar acceso</button>';
   }
 
-  var batchBtn = t.createdAt
-    ? ' <button class="btn-access-mark btn-mark-batch" onclick="downloadBatchFromTable(this)" data-createdat="' + escHtml(t.createdAt) + '" data-name="' + escHtml(t.name) + '" title="Descargar lote completo de esta compra">&#128230;</button>'
-    : '';
+  // Individual download button
+  var dlBtn = '<button class="btn-access-mark btn-mark-dl" onclick="downloadTicketFromTable(this)" data-id="' + t.id + '" title="Descargar esta entrada">&#11015;</button>';
 
-  return '<tr class="' + rowClass + '" id="row-' + t.id + '" data-createdat="' + escHtml(t.createdAt || '') + '">'
+  // Batch download: only on the LAST ticket of the batch, and only if batch has > 1 ticket
+  var batchBtn = '';
+  if (isLastInBatch && batchCount > 1 && t.createdAt) {
+    batchBtn = ' <button class="btn-access-mark btn-mark-batch" onclick="downloadBatchFromTable(this)" data-createdat="' + escHtml(t.createdAt) + '" data-name="' + escHtml(t.name) + '" title="Descargar las ' + batchCount + ' entradas de esta compra">&#128230; ' + batchCount + '</button>';
+  }
+
+  return '<tr class="' + rowClass + '" id="row-' + t.id + '">'
     + '<td class="cell-id">' + escHtml(t.id) + '</td>'
     + '<td class="cell-name">' + escHtml(t.name) + '</td>'
     + '<td>' + escHtml(t.company) + '</td>'
@@ -3349,11 +3368,10 @@ function renderRow(t) {
     + '<td style="font-size:12px;' + payColor + '">' + escHtml(payStatus) + '</td>'
     + '<td style="font-size:12px;">' + escHtml(t.paymentDate || '\u2014') + '</td>'
     + '<td><span class="badge ' + badgeClass + '"><span class="badge-dot"></span>' + badgeText + '</span></td>'
-    + '<td class="td-actions">' + actionBtn
-    + ' <button class="btn-access-mark btn-mark-dl" onclick="downloadTicketFromTable(this)" data-id="' + t.id + '" title="Descargar esta entrada">&#11015;</button>'
-    + batchBtn + '</td>'
+    + '<td class="td-actions">' + actionBtn + ' ' + dlBtn + batchBtn + '</td>'
     + '</tr>';
 }
+
 
 
 function escHtml(str) {
@@ -3403,7 +3421,17 @@ function toggleAccess(btnEl, accessed) {
   }
   if (ticket) {
     var row = document.getElementById('row-' + id);
-    if (row) row.outerHTML = renderRow(ticket);
+    if (row) {
+      // Re-calculate batch info for this ticket
+      var allT = loadTickets();
+      var filtered2 = allT;
+      var lastOfBatch2 = {};
+      filtered2.forEach(function(t2, i2) { if (t2.createdAt) lastOfBatch2[t2.createdAt] = i2; });
+      var ticketIdx = filtered2.findIndex(function(t2) { return t2.id === id; });
+      var isLast = ticket.createdAt && lastOfBatch2[ticket.createdAt] === ticketIdx;
+      var bCount = ticket.createdAt ? filtered2.filter(function(t2) { return t2.createdAt === ticket.createdAt; }).length : 1;
+      row.outerHTML = renderRow(ticket, isLast, bCount);
+    }
   }
 
   var filterVal = document.getElementById('access-session-filter').value;
