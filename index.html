@@ -1618,6 +1618,19 @@
   .btn-mark-dl:hover { border-color: var(--gold-dark); color: var(--gold-dark); }
   .td-actions { white-space: nowrap; }
 
+  .btn-mark-batch {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 5px;
+    padding: 5px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.18s;
+    margin-left: 2px;
+  }
+  .btn-mark-batch:hover { border-color: var(--gold-dark); color: var(--gold-dark); }
+
 </style>
 </head>
 <body>
@@ -3310,7 +3323,7 @@ function renderRow(t) {
   var badgeText  = accessed ? 'Accedido' : 'No utilizado';
   var price      = parseFloat(t.price) || 0;
   var priceStr   = price % 1 === 0 ? parseInt(price) : price.toFixed(2);
-  var payStatus  = t.paymentStatus || '—';
+  var payStatus  = t.paymentStatus || '\u2014';
   var payColor   = payStatus === 'Pendiente' ? 'color:#c05000;font-weight:600;' : (payStatus === 'Pagado' ? 'color:#1a6e3c;font-weight:600;' : '');
 
   var actionBtn;
@@ -3320,21 +3333,27 @@ function renderRow(t) {
     actionBtn = '<button class="btn-access-mark btn-mark-used" onclick="toggleAccess(this, true)" data-id="' + t.id + '">\u2713 Marcar acceso</button>';
   }
 
-  return '<tr class="' + rowClass + '" id="row-' + t.id + '">'
+  var batchBtn = t.createdAt
+    ? ' <button class="btn-access-mark btn-mark-batch" onclick="downloadBatchFromTable(this)" data-createdat="' + escHtml(t.createdAt) + '" data-name="' + escHtml(t.name) + '" title="Descargar lote completo de esta compra">&#128230;</button>'
+    : '';
+
+  return '<tr class="' + rowClass + '" id="row-' + t.id + '" data-createdat="' + escHtml(t.createdAt || '') + '">'
     + '<td class="cell-id">' + escHtml(t.id) + '</td>'
     + '<td class="cell-name">' + escHtml(t.name) + '</td>'
     + '<td>' + escHtml(t.company) + '</td>'
     + '<td>' + escHtml(t.type) + '</td>'
     + '<td style="font-size:12px;color:var(--text-muted);">' + escHtml(t.session) + '</td>'
     + '<td style="font-family:Courier New,monospace;">' + priceStr + ' &euro;</td>'
-    + '<td style="font-size:12px;">' + escHtml(t.paymentMethod || '—') + '</td>'
+    + '<td style="font-size:12px;">' + escHtml(t.paymentMethod || '\u2014') + '</td>'
     + '<td style="font-size:12px;' + payColor + '">' + escHtml(payStatus) + '</td>'
-    + '<td style="font-size:12px;">' + escHtml(t.paymentDate || '—') + '</td>'
+    + '<td style="font-size:12px;">' + escHtml(t.paymentDate || '\u2014') + '</td>'
     + '<td><span class="badge ' + badgeClass + '"><span class="badge-dot"></span>' + badgeText + '</span></td>'
     + '<td class="td-actions">' + actionBtn
-    + ' <button class="btn-access-mark btn-mark-dl" onclick="downloadTicketFromTable(this)" data-id="' + t.id + '" title="Descargar entrada">&#11015;</button></td>'
+    + ' <button class="btn-access-mark btn-mark-dl" onclick="downloadTicketFromTable(this)" data-id="' + t.id + '" title="Descargar esta entrada">&#11015;</button>'
+    + batchBtn + '</td>'
     + '</tr>';
 }
+
 
 function escHtml(str) {
   return String(str || '')
@@ -4311,7 +4330,7 @@ async function smartSavePDF(pdf, fileName) {
     }
   }
   // Escritorio o navegador sin Share API: descarga directa
-  await smartSavePDF(pdf, fileName);
+  pdf.save(fileName);
 }
 
 function buildFileName(str, maxLen) {
@@ -4471,6 +4490,78 @@ ngle = (ticket.session||'').split(' · ')[0].replace(/[\s()]+/g,'_');
   btnEl.textContent = '\u2b07';
   btnEl.disabled = false;
   showToast('Entrada ' + id + ' descargada');
+}
+
+
+async function downloadBatchFromTable(btnEl) {
+  var createdAt = btnEl.getAttribute('data-createdat');
+  var clientName = btnEl.getAttribute('data-name') || '';
+  if (!createdAt) { showToast('No se puede identificar el lote'); return; }
+
+  // Find all tickets with same createdAt (same purchase batch)
+  var allTickets = loadLocalTickets();
+  var batch = allTickets.filter(function(t) { return t.createdAt === createdAt; });
+
+  if (batch.length === 0) { showToast('No se encontraron entradas del lote'); return; }
+
+  btnEl.textContent = '...';
+  btnEl.disabled = true;
+
+  var balconCfg;
+  if (currentRole === 'admin') {
+    var af = document.getElementById('access-balcon-filter');
+    balconCfg = BALCON_CONFIG[af ? parseInt(af.value) : 1] || BALCON_CONFIG[1];
+  } else {
+    balconCfg = BALCON_CONFIG[currentBalcon] || BALCON_CONFIG[1];
+  }
+
+  var { jsPDF } = window.jspdf;
+  var pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [595, 842] });
+
+  for (var i = 0; i < batch.length; i++) {
+    var t = batch[i];
+    var sessionParts = (t.session || '').split(' · ');
+    var sName = sessionParts[0] || '';
+    var dt    = (sessionParts[1] || '').split(' ');
+    var sDate = dt[0] + (dt[1] ? ' ' + dt[1] : '');
+    var sTime = dt[2] || '';
+    var price = parseFloat(t.price) || 0;
+
+    var wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:595px;height:842px;overflow:hidden;background:#fff;';
+    wrapper.innerHTML = buildTicketHTML(
+      t.name, t.company, t.type, price,
+      sName, sDate, sTime, t.id,
+      t.paymentMethod || '', t.paymentStatus || '', t.paymentDate || '',
+      balconCfg
+    );
+    document.body.appendChild(wrapper);
+
+    var qrDiv = wrapper.querySelector('.pdf-qr');
+    if (qrDiv) {
+      new QRCode(qrDiv, { text: t.id, width: 100, height: 100,
+        colorDark: '#0a0a0a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    }
+    await new Promise(function(r) { setTimeout(r, 250); });
+
+    var canvas = await html2canvas(wrapper.firstElementChild, {
+      scale: 2, useCORS: true, allowTaint: true,
+      backgroundColor: '#ffffff', width: 595, height: 842, logging: false
+    });
+    document.body.removeChild(wrapper);
+
+    if (i > 0) pdf.addPage([595, 842], 'portrait');
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 595, 842);
+  }
+
+  var cleanSession = buildFileName(batch[0].session.split(' · ')[0], 30);
+  var cleanClient  = buildFileName(clientName, 25);
+  var fname = batch.length + ' entrada' + (batch.length > 1 ? 's' : '') + ' - ' + cleanSession + ' - ' + cleanClient + '.pdf';
+  await smartSavePDF(pdf, fname);
+
+  btnEl.innerHTML = '&#128230;';
+  btnEl.disabled  = false;
+  showToast('Lote de ' + batch.length + ' entrada' + (batch.length > 1 ? 's' : '') + ' descargado');
 }
 
 // ============================================================
