@@ -3292,44 +3292,50 @@ function onAdminBalconFilterChange() {
 
 function renderAccessTable() {
   renderAllAforoWidgets();
-  const filterVal = document.getElementById('access-session-filter').value;
-  let tickets = loadTickets();
+  var filterVal = document.getElementById('access-session-filter').value;
+  var tickets   = loadTickets();
 
   if (filterVal !== 'all') {
-    const sessionName = filterVal.split('|')[0];
+    var sessionName = filterVal.split('|')[0];
     tickets = tickets.filter(function(t) { return t.session.startsWith(sessionName); });
   }
 
-  const tbody = document.getElementById('access-table-body');
-  const empty = document.getElementById('access-empty');
-  const table = document.getElementById('access-table');
+  var tbody = document.getElementById('access-table-body');
+  var empty = document.getElementById('access-empty');
+  var table = document.getElementById('access-table');
 
   if (tickets.length === 0) {
     tbody.innerHTML = '';
     table.style.display = 'none';
     empty.style.display = 'flex';
-  } else {
-    table.style.display = 'table';
-    empty.style.display = 'none';
-
-    // Group by batchId (createdAt) to know which is the last of each batch
-    var lastOfBatch = {};
-    tickets.forEach(function(t, idx) {
-      if (t.createdAt) lastOfBatch[t.createdAt] = idx;
-    });
-
-    tbody.innerHTML = tickets.map(function(t, idx) {
-      var isLastInBatch = t.createdAt && lastOfBatch[t.createdAt] === idx;
-      // Count how many in this batch
-      var batchCount = t.createdAt
-        ? tickets.filter(function(x) { return x.createdAt === t.createdAt; }).length
-        : 1;
-      return renderRow(t, isLastInBatch, batchCount);
-    }).join('');
+    updateStats(tickets);
+    return;
   }
+
+  table.style.display = 'table';
+  empty.style.display = 'none';
+
+  // Build batch map: batchId -> { count, lastIndex }
+  // Work over the FILTERED ticket array
+  var batchMap = {};
+  tickets.forEach(function(t, i) {
+    var key = t.createdAt || ('solo_' + t.id);
+    if (!batchMap[key]) batchMap[key] = { count: 0, lastIndex: -1 };
+    batchMap[key].count++;
+    batchMap[key].lastIndex = i; // always overwrites -> ends up as the last occurrence
+  });
+
+  tbody.innerHTML = tickets.map(function(t, i) {
+    var key         = t.createdAt || ('solo_' + t.id);
+    var batchInfo   = batchMap[key];
+    var isLast      = (batchInfo.lastIndex === i);
+    var batchCount  = batchInfo.count;
+    return renderRow(t, isLast, batchCount);
+  }).join('');
 
   updateStats(tickets);
 }
+
 
 function renderRow(t, isLastInBatch, batchCount) {
   var accessed   = t.status === 'Accedido';
@@ -4432,7 +4438,15 @@ async function downloadTicketFromTable(btnEl) {
   var pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [595, 842] });
   pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 595, 842);
   var cleanNameSingle = (ticket.name||'').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s]/g,'').trim().replace(/\s+/g,'_').slice(0,25);
-  var sessionLabelSi
+    var sessionLabelSingle = buildFileName((ticket.session||'').split(' · ')[0], 35);
+  await smartSavePDF(pdf, '1 entrada - ' + sessionLabelSingle + ' - ' + cleanNameSingle + '.pdf');
+
+  btnEl.textContent = '\u2b07';
+  btnEl.disabled = false;
+  showToast('Entrada descargada');
+}
+
+var sessionLabelSi
 
 // ============================================================
 // ===== DESCARGA DE TODAS LAS ENTRADAS FILTRADAS (PDF ÚNICO) =====
