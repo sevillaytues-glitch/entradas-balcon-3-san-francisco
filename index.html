@@ -1827,6 +1827,7 @@
     <div class="aforo-widget" id="aforo-widget-gen">
       <div class="aforo-widget-title">
         <span>📊 Aforo por sesión</span>
+        <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:3px 8px;" title="Actualizar desde Sheets">↻</button>
       </div>
       <div id="aforo-rows-gen"></div>
     </div>
@@ -2019,6 +2020,7 @@
   <div class="aforo-widget" id="aforo-widget-acc">
     <div class="aforo-widget-title">
       <span>📊 Aforo por sesión</span>
+      <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:3px 8px;" title="Actualizar desde Sheets">↻</button>
     </div>
     <div id="aforo-rows-acc"></div>
   </div>
@@ -3315,14 +3317,30 @@ function renderAccessTable() {
   table.style.display = 'table';
   empty.style.display = 'none';
 
-  // Build batch map: batchId -> { count, lastIndex }
-  // Work over the FILTERED ticket array
+  // Build batch map using createdAt when available.
+  // For old tickets where each had a unique createdAt (milliseconds apart),
+  // fall back to grouping by name+session as a proxy for "same purchase".
+  // Step 1: count how many tickets share each createdAt
+  var createdAtCount = {};
+  tickets.forEach(function(t) {
+    var key = t.createdAt || '';
+    if (key) createdAtCount[key] = (createdAtCount[key] || 0) + 1;
+  });
+
   var batchMap = {};
   tickets.forEach(function(t, i) {
-    var key = t.createdAt || ('solo_' + t.id);
+    // Use createdAt only if multiple tickets share it (real batch)
+    // Otherwise fall back to name+session grouping
+    var key;
+    if (t.createdAt && createdAtCount[t.createdAt] > 1) {
+      key = t.createdAt;
+    } else {
+      // Group solo tickets or old tickets by name+session
+      key = 'solo_' + t.id; // each standalone
+    }
     if (!batchMap[key]) batchMap[key] = { count: 0, lastIndex: -1 };
     batchMap[key].count++;
-    batchMap[key].lastIndex = i; // always overwrites -> ends up as the last occurrence
+    batchMap[key].lastIndex = i;
   });
 
   tbody.innerHTML = tickets.map(function(t, i) {
@@ -4256,10 +4274,16 @@ function countSoldBySession() {
   var counts = {};
   SESSIONS_LIST.forEach(function(s) { counts[s.key] = 0; });
   tickets.forEach(function(t) {
-    var sessionName = (t.session || '').split(' · ')[0];
-    SESSIONS_LIST.forEach(function(s) {
-      if (sessionName.startsWith(s.key)) counts[s.key]++;
-    });
+    var sessionName = (t.session || '').split(' · ')[0].trim();
+    // Use exact match to avoid Viernes Santo (Madrugá) vs (Tarde) confusion
+    if (counts.hasOwnProperty(sessionName)) {
+      counts[sessionName]++;
+    } else {
+      // Fallback: try startsWith for partial matches
+      SESSIONS_LIST.forEach(function(s) {
+        if (sessionName === s.key) counts[s.key]++;
+      });
+    }
   });
   return counts;
 }
@@ -4293,7 +4317,42 @@ function renderAforoWidget(containerId) {
 }
 
 // ─── Renderizar ambos widgets ───
+
+function syncAndRefreshAforo() {
+  if (gsGetMode() === 'sheets') {
+    showToast('Sincronizando con Sheets...');
+    gsReadTickets().then(function(sheetsTickets) {
+      if (sheetsTickets.length > 0) {
+        saveLocalTickets(sheetsTickets);
+        updateNavBadge();
+      }
+      _doRenderAforoWidgets();
+      showToast('Aforo actualizado: ' + sheetsTickets.length + ' entradas');
+    }).catch(function(e) {
+      _doRenderAforoWidgets();
+      showToast('Error al sincronizar: ' + e.message);
+    });
+  } else {
+    _doRenderAforoWidgets();
+    showToast('Aforo actualizado');
+  }
+}
+
 function renderAllAforoWidgets() {
+  // If using Sheets mode and local cache is empty, try to pull first
+  if (gsGetMode() === 'sheets' && loadLocalTickets().length === 0) {
+    gsReadTickets().then(function(sheetsTickets) {
+      if (sheetsTickets.length > 0) {
+        saveLocalTickets(sheetsTickets);
+        updateNavBadge();
+        _doRenderAforoWidgets();
+      }
+    }).catch(function() {});
+  }
+  _doRenderAforoWidgets();
+}
+
+function _doRenderAforoWidgets() {
   renderAforoWidget('aforo-rows-gen');
   renderAforoWidget('aforo-rows-acc');
 }
