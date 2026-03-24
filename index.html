@@ -285,9 +285,10 @@
     letter-spacing: 0.03em;
   }
   .ticket-header-logo {
-    height: 50px;
-    opacity: 0.92;
-    /* logo is white on black, invert for white ticket bg */
+    height: 70px;
+    max-width: 180px;
+    object-fit: contain;
+    opacity: 0.95;
     margin-left: 20px;
   }
 
@@ -1373,26 +1374,38 @@
     background: var(--black);
     display: flex; align-items: center; justify-content: center;
     z-index: 9999;
+    padding: 20px;
   }
   .login-card {
     background: var(--dark); border: 1px solid var(--border);
-    border-radius: 16px; padding: 40px 44px;
-    width: 100%; max-width: 440px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+    border-radius: 20px; padding: 48px 52px;
+    width: 100%; max-width: 680px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.14);
     display: flex; flex-direction: column; align-items: center;
   }
-  .login-title { font-family: var(--font-main); font-size: 22px; font-weight: 600; color: var(--gold-dark); text-align: center; margin-bottom: 4px; }
-  .login-subtitle { font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 28px; }
-  .login-balcon-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-bottom: 24px; }
+  .login-title { font-family: var(--font-main); font-size: 28px; font-weight: 600; color: var(--gold-dark); text-align: center; margin-bottom: 6px; letter-spacing: 0.02em; }
+  .login-subtitle { font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 36px; letter-spacing: 0.03em; }
+  .login-balcon-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; margin-bottom: 28px; }
   .login-balcon-btn {
-    border: 2px solid var(--border); border-radius: 10px; padding: 16px 10px;
-    background: var(--dark2); cursor: pointer; transition: all 0.2s;
-    display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
+    border: 2px solid var(--border); border-radius: 14px; padding: 28px 16px 24px;
+    background: var(--dark2); cursor: pointer; transition: all 0.22s;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; text-align: center;
+    min-height: 180px;
   }
-  .login-balcon-btn:hover { border-color: var(--gold); background: rgba(154,122,46,0.06); }
-  .login-balcon-btn.selected { border-color: var(--gold-dark); background: rgba(154,122,46,0.1); box-shadow: 0 0 0 3px rgba(154,122,46,0.15); }
-  .login-balcon-btn img { height: 44px; object-fit: contain; border-radius: 4px; max-width: 140px; }
-  .login-balcon-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .login-balcon-btn:hover { border-color: var(--gold); background: rgba(154,122,46,0.06); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+  .login-balcon-btn.selected { border-color: var(--gold-dark); background: rgba(154,122,46,0.1); box-shadow: 0 0 0 3px rgba(154,122,46,0.18); transform: translateY(-2px); }
+  .login-balcon-btn img { height: 56px; object-fit: contain; border-radius: 6px; max-width: 160px; }
+  .login-balcon-icon { font-size: 48px; line-height: 1; }
+  .login-balcon-name { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .login-balcon-place { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .login-divider { width: 100%; height: 1px; background: var(--border); margin-bottom: 24px; }
+  .login-pass-group { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+  .login-pass-label { font-size: 11px; font-weight: 500; color: var(--text); text-transform: uppercase; letter-spacing: 0.08em; }
+  .login-pass-wrap { display: flex; gap: 8px; }
+  .login-pass-wrap input { flex: 1; }
+  .login-error { font-size: 12px; color: #e53e3e; text-align: center; min-height: 20px; margin-bottom: 4px; }
+  .login-submit { width: 100%; max-width: 420px; }t-weight: 600; color: var(--text); }
   .login-balcon-place { font-size: 10px; color: var(--text-muted); }
   .login-pass-group { width: 100%; display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
   .login-pass-label { font-size: 11px; font-weight: 500; color: var(--text); text-transform: uppercase; letter-spacing: 0.08em; }
@@ -1400,6 +1413,102 @@
   .login-pass-wrap input { flex: 1; }
   .login-error { font-size: 12px; color: #e53e3e; text-align: center; min-height: 20px; margin-bottom: 4px; }
   .login-submit { width: 100%; }
+
+  /* ===== WIDGET AFORO POR SESIÓN ===== */
+  .aforo-widget {
+    background: var(--dark);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .aforo-widget-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gold-dark);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .aforo-session-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+  }
+  .aforo-session-row:last-child { border-bottom: none; }
+  .aforo-session-name {
+    font-size: 11px;
+    color: var(--text);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .aforo-bar-wrap {
+    flex: 1.4;
+    height: 8px;
+    background: var(--dark3);
+    border-radius: 4px;
+    overflow: hidden;
+    min-width: 60px;
+  }
+  .aforo-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+    background: linear-gradient(90deg, #38a169, #68d391);
+  }
+  .aforo-bar-fill.almost  { background: linear-gradient(90deg, #d69e2e, #f6d860); }
+  .aforo-bar-fill.full    { background: linear-gradient(90deg, #e53e3e, #fc8181); }
+  .aforo-counts {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'Courier New', monospace;
+    white-space: nowrap;
+    min-width: 52px;
+    text-align: right;
+  }
+  .aforo-counts strong { color: var(--text); }
+  .aforo-badge-full {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: rgba(229,62,62,0.12);
+    color: #e53e3e;
+    border: 1px solid rgba(229,62,62,0.25);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+
+  /* Config aforo */
+  .aforo-config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .aforo-config-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .aforo-config-item label {
+    font-size: 10px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .aforo-config-item input[type="number"] {
+    padding: 7px 10px;
+    font-size: 13px;
+    text-align: center;
+  }
 
 </style>
 </head>
@@ -1410,20 +1519,36 @@
 <div id="login-screen">
   <div class="login-card">
     <div class="login-title">Semana Santa Sevilla 2026</div>
-    <div class="login-subtitle">Selecciona tu balcón e introduce la contraseña</div>
+    <div class="login-subtitle">Selecciona tu perfil e introduce la contraseña</div>
 
     <div class="login-balcon-btns">
       <button class="login-balcon-btn" id="btn-b1" onclick="selectBalcon(1)">
         <img id="login-logo-1" src="" alt="Catering Tienda Nueva">
-        <div class="login-balcon-name">Balcón 3ª Planta</div>
-        <div class="login-balcon-place">Catering Tienda Nueva</div>
+        <div>
+          <div class="login-balcon-name">Balcón 3ª Planta</div>
+          <div class="login-balcon-place">Catering Tienda Nueva</div>
+          <div class="login-balcon-place" style="margin-top:6px;font-size:10px;color:var(--gold-dark);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">Staff</div>
+        </div>
       </button>
       <button class="login-balcon-btn" id="btn-b2" onclick="selectBalcon(2)">
         <img id="login-logo-2" src="" alt="Catering El Real">
-        <div class="login-balcon-name">Balcón 2ª Planta</div>
-        <div class="login-balcon-place">Catering El Real</div>
+        <div>
+          <div class="login-balcon-name">Balcón 2ª Planta</div>
+          <div class="login-balcon-place">Catering El Real</div>
+          <div class="login-balcon-place" style="margin-top:6px;font-size:10px;color:var(--gold-dark);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">Staff</div>
+        </div>
+      </button>
+      <button class="login-balcon-btn" id="btn-admin" onclick="selectBalcon('admin')">
+        <div class="login-balcon-icon">&#128737;</div>
+        <div>
+          <div class="login-balcon-name">Administrador</div>
+          <div class="login-balcon-place">Acceso completo</div>
+          <div class="login-balcon-place" style="margin-top:6px;font-size:10px;color:var(--gold-dark);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">Admin</div>
+        </div>
       </button>
     </div>
+
+    <div class="login-divider"></div>
 
     <div class="login-pass-group">
       <div class="login-pass-label">Contraseña</div>
@@ -1460,6 +1585,9 @@
     <button class="nav-tab" id="tab-config" onclick="switchTab('config')">
       <span class="nav-icon">⚙️</span> Configuración
       <span class="nav-badge nav-badge--warn" id="config-badge" style="display:none;background:#d69e2e;">!</span>
+    </button>
+    <button class="nav-tab" onclick="doLogout()" style="margin-left:8px;border:1px solid var(--border);color:var(--text-muted);" title="Cambiar de balcón">
+      <span class="nav-icon">🚪</span> Salir
     </button>
   </nav>
 </header>
@@ -1572,6 +1700,14 @@
           <button class="btn btn-ghost" onclick="clearForm()" style="color:#e53e3e;border-color:#3a1a1a;" onmouseover="this.style.borderColor='#e53e3e';this.style.background='rgba(229,62,62,0.08)'" onmouseout="this.style.borderColor='#3a1a1a';this.style.background='transparent'">✕ Limpiar formulario</button>
         </div>
       </div>
+    </div>
+
+    <!-- Widget aforo sesiones -->
+    <div class="aforo-widget" id="aforo-widget-gen">
+      <div class="aforo-widget-title">
+        <span>📊 Aforo por sesión</span>
+      </div>
+      <div id="aforo-rows-gen"></div>
     </div>
 
     <!-- Botón descarga -->
@@ -1744,6 +1880,14 @@
         🗑 Limpiar todo
       </button>
     </div>
+  </div>
+
+  <!-- Widget aforo accesos -->
+  <div class="aforo-widget" id="aforo-widget-acc">
+    <div class="aforo-widget-title">
+      <span>📊 Aforo por sesión</span>
+    </div>
+    <div id="aforo-rows-acc"></div>
   </div>
 
   <!-- Contadores -->
@@ -1925,6 +2069,19 @@
               <div class="config-radio-desc">Base de datos centralizada en la nube. Todos los dispositivos del staff ven y actualizan los mismos datos en tiempo real.</div>
             </div>
           </label>
+        </div>
+      </div>
+
+      <!-- Aforo máximo por sesión (solo admin) -->
+      <div class="config-card" id="aforo-config-card">
+        <div class="config-card-title">&#127903; Aforo máximo por sesión</div>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6;">
+          Define el número máximo de entradas disponibles para cada sesión. Por defecto 16. Los cambios se guardan en este dispositivo.
+        </p>
+        <div class="aforo-config-grid" id="aforo-config-inputs"></div>
+        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="saveAforo()" style="width:auto;padding:10px 24px;">&#128190; Guardar aforos</button>
+          <button class="btn btn-ghost" onclick="resetAforo()">&#8634; Restablecer a 16</button>
         </div>
       </div>
 
@@ -2356,7 +2513,7 @@ async function downloadPDF() {
       // Build hidden ticket
       const wrapper = document.createElement('div');
       wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:595px;height:842px;overflow:hidden;background:#fff;';
-      wrapper.innerHTML = buildTicketHTML(name, company, type, price, sessionName, sessionDate, sessionTime, id, paymentMethod, paymentStatus, paymentDateStr);
+      wrapper.innerHTML = buildTicketHTML(name, company, type, price, sessionName, sessionDate, sessionTime, id, paymentMethod, paymentStatus, paymentDateStr, BALCON_CONFIG[currentBalcon]);
       document.body.appendChild(wrapper);
 
       // Generate QR
@@ -2413,6 +2570,7 @@ async function downloadPDF() {
 
     document.getElementById('f-counter').value = counter + qty;
     updatePreview();
+    renderAllAforoWidgets();
     showToast('✓ PDF generado con ' + qty + ' entrada' + (qty > 1 ? 's' : ''));
 
   } catch(err) {
@@ -2427,10 +2585,11 @@ async function downloadPDF() {
 // ============================================================
 // CONSTRUIR HTML DE UNA ENTRADA (para PDF)
 // ============================================================
-function buildTicketHTML(name, company, type, price, sessionName, sessionDate, sessionTime, id, paymentMethod, paymentStatus, paymentDateStr) {
+function buildTicketHTML(name, company, type, price, sessionName, sessionDate, sessionTime, id, paymentMethod, paymentStatus, paymentDateStr, cfg) {
+  cfg = cfg || BALCON_CONFIG[currentBalcon] || BALCON_CONFIG[1];
   const priceStr = price % 1 === 0 ? price : price.toFixed(2);
-  const logoSrc  = 'data:image/png;base64,' + LOGO_B64;
-  const imgSrc   = 'data:image/jpeg;base64,' + IMG_B64;
+  const logoSrc  = 'data:image/jpeg;base64,' + (window[cfg.logoKey] || LOGO_B64);
+  const imgSrc   = 'data:image/jpeg;base64,' + (window[cfg.imgKey]  || IMG_B64);
 
   return `
 <div style="
@@ -2447,9 +2606,9 @@ function buildTicketHTML(name, company, type, price, sessionName, sessionDate, s
     <div>
       <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:4px;">Entrada oficial · Temporada 2026</div>
       <div style="font-size:19px;font-weight:700;color:#0a0a0a;line-height:1.15;letter-spacing:0.01em;">Experiencia Balcón<br>Semana Santa Sevilla 2026</div>
-      <div style="font-family:Arial,sans-serif;font-size:10.5px;color:#555;margin-top:4px;font-weight:300;letter-spacing:0.03em;">Balcón 3ª Planta San Francisco · Plaza de San Francisco, 8 – 3ª Planta</div>
+      <div style="font-family:Arial,sans-serif;font-size:10.5px;color:#555;margin-top:4px;font-weight:300;letter-spacing:0.03em;">${cfg.recinto} · ${cfg.address}</div>
     </div>
-    <img src="${logoSrc}" style="height:48px;margin-left:20px;" alt="Logo">
+    <img src="${logoSrc}" style="height:70px;max-width:180px;object-fit:contain;margin-left:20px;" alt="Logo">
   </div>
 
   <!-- Imagen -->
@@ -2493,7 +2652,7 @@ function buildTicketHTML(name, company, type, price, sessionName, sessionDate, s
         </div>
         <div>
           <div style="font-family:Arial,sans-serif;font-size:8.5px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:2px;">Recinto</div>
-          <div style="font-size:13px;color:#333;">Balcón 3ª Planta<br>San Francisco</div>
+          <div style="font-size:13px;color:#333;">${cfg.recinto}</div>
         </div>
         <div>
           <div style="font-family:Arial,sans-serif;font-size:8.5px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:2px;">ID de entrada</div>
@@ -2501,7 +2660,7 @@ function buildTicketHTML(name, company, type, price, sessionName, sessionDate, s
         </div>
         <div>
           <div style="font-family:Arial,sans-serif;font-size:8.5px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:2px;">Dirección</div>
-          <div style="font-size:13px;color:#333;">Plaza de San Francisco, 8<br>3ª Planta, Sevilla</div>
+          <div style="font-size:13px;color:#333;">${cfg.address}</div>
         </div>
       </div>
     </div>
@@ -2518,8 +2677,8 @@ function buildTicketHTML(name, company, type, price, sessionName, sessionDate, s
   <!-- Pie -->
   <div style="padding:11px 32px;border-top:1px solid #e8e0d0;display:flex;align-items:center;justify-content:space-between;background:#faf7f0;flex-shrink:0;">
     <div>
-      <div style="font-size:13px;font-weight:600;color:#0a0a0a;">Catering Tienda Nueva · Lebrija</div>
-      <div style="font-family:Arial,sans-serif;font-size:10px;color:#777;letter-spacing:0.04em;">+34 609 50 62 25 · cateringtiendanueva.com</div>
+      <div style="font-size:13px;font-weight:600;color:#0a0a0a;">${cfg.org}</div>
+      <div style="font-family:Arial,sans-serif;font-size:10px;color:#777;letter-spacing:0.04em;">${cfg.tel}</div>
     </div>
     <div style="font-family:Arial,sans-serif;font-size:9px;color:#aaa;text-align:right;max-width:200px;line-height:1.5;">
       Esta entrada es personal e intransferible.<br>Preséntela junto a su documento de identidad.
@@ -2948,6 +3107,7 @@ function updateTicketStatus(id, status) {
 // ============================================================
 
 function renderAccessTable() {
+  renderAllAforoWidgets();
   const filterVal = document.getElementById('access-session-filter').value;
   let tickets = loadTickets();
 
@@ -3656,10 +3816,11 @@ var BALCON_CONFIG = {
     logoKey:   'LOGO_B64_1',
     imgKey:    'IMG_B64_1',
     imgCaption:'Plaza de San Francisco · Sevilla',
-    password:  'satff1',
+    password:  'staff1',
     storageKey:'bssv_tickets_2026',
     gsConfigKey:'bssv_gs_config',
-    gsModeKey: 'bssv_storage_mode'
+    gsModeKey: 'bssv_storage_mode',
+    role:      'staff'
   },
   2: {
     name:      'Balcón 2ª Planta San Francisco',
@@ -3674,30 +3835,49 @@ var BALCON_CONFIG = {
     password:  'staff2',
     storageKey:'b2sf_tickets_2026',
     gsConfigKey:'b2sf_gs_config',
-    gsModeKey: 'b2sf_storage_mode'
+    gsModeKey: 'b2sf_storage_mode',
+    role:      'staff'
+  },
+  admin: {
+    name:      'Administrador',
+    recinto:   'Balcón 3ª Planta San Francisco',
+    address:   'Plaza de San Francisco, 8 - 3ª Planta',
+    org:       'Catering Tienda Nueva · Lebrija',
+    tel:       '+34 609 50 62 25',
+    prefix:    'B3SF',
+    logoKey:   'LOGO_B64_1',
+    imgKey:    'IMG_B64_1',
+    imgCaption:'Plaza de San Francisco · Sevilla',
+    password:  'admin2026',
+    storageKey:'bssv_tickets_2026',
+    gsConfigKey:'bssv_gs_config',
+    gsModeKey: 'bssv_storage_mode',
+    role:      'admin'
   }
 };
 
-var currentBalcon = 0;
+var currentBalcon  = 0;
 var selectedBalcon = 0;
+var currentRole    = 'staff';
 
 function selectBalcon(num) {
   selectedBalcon = num;
   document.getElementById('btn-b1').classList.toggle('selected', num === 1);
   document.getElementById('btn-b2').classList.toggle('selected', num === 2);
+  document.getElementById('btn-admin').classList.toggle('selected', num === 'admin');
   document.getElementById('login-pass').focus();
   document.getElementById('login-error').textContent = '';
 }
 
 function doLogin() {
   if (!selectedBalcon) {
-    document.getElementById('login-error').textContent = 'Selecciona un balcón primero.';
+    document.getElementById('login-error').textContent = 'Selecciona un perfil primero.';
     return;
   }
   var pass = document.getElementById('login-pass').value;
   var cfg  = BALCON_CONFIG[selectedBalcon];
   if (pass !== cfg.password) {
-    document.getElementById('login-error').textContent = 'Contraseña incorrecta. Inténtalo de nuevo.';
+    document.getElementById('login-error').textContent = 'Contrasena incorrecta. Intentalo de nuevo.';
     document.getElementById('login-pass').value = '';
     document.getElementById('login-pass').focus();
     return;
@@ -3707,6 +3887,7 @@ function doLogin() {
 
 function activateBalcon(num) {
   currentBalcon = num;
+  currentRole   = BALCON_CONFIG[num].role;
   var cfg = BALCON_CONFIG[num];
 
   // ── Update global asset variables ──
@@ -3723,31 +3904,23 @@ function activateBalcon(num) {
   document.getElementById('t-eventimg').src  = 'data:image/jpeg;base64,' + IMG_B64;
   document.getElementById('app-logo').src    = 'data:image/jpeg;base64,' + LOGO_B64;
 
-  // Event name in ticket
-  var evName = document.querySelector('.ticket-event-name');
-  if (evName) evName.innerHTML = 'Experiencia Balcón<br>Semana Santa Sevilla 2026';
-
-  // Venue line
   var venue = document.querySelector('.ticket-venue');
   if (venue) venue.textContent = cfg.recinto + ' · ' + cfg.address;
-
-  // Footer org
   var footName = document.querySelector('.ticket-footer-name');
   if (footName) footName.textContent = cfg.org;
   var footTel = document.querySelector('.ticket-footer-tel');
   if (footTel) footTel.textContent = cfg.tel;
-
-  // Image caption
   var cap = document.querySelector('.ticket-image-caption');
   if (cap) cap.textContent = cfg.imgCaption;
-
-  // App header subtitle
   var sub = document.querySelector('.app-header-subtitle');
   if (sub) sub.textContent = cfg.recinto + ' · Semana Santa 2026';
 
-  // ── Set default prefix for this balcon ──
+  // ── Set default prefix ──
   var prefixEl = document.getElementById('f-prefix');
   if (prefixEl) prefixEl.value = cfg.prefix;
+
+  // ── Apply role-based tab visibility ──
+  applyRoleTabs(currentRole);
 
   // ── Hide login, show app ──
   document.getElementById('login-screen').style.display = 'none';
@@ -3756,6 +3929,166 @@ function activateBalcon(num) {
   updatePreview();
   updateNavBadge();
   gsUpdateStatusBar();
+  renderAllAforoWidgets();
+  if (currentRole === 'admin') {
+    renderAforoConfigInputs();
+    var afCard = document.getElementById('aforo-config-card');
+    if (afCard) afCard.style.display = '';
+  } else {
+    var afCard = document.getElementById('aforo-config-card');
+    if (afCard) afCard.style.display = 'none';
+  }
+
+  // Staff always lands on Control de Accesos
+  if (currentRole === 'staff') {
+    switchTab('access');
+  } else {
+    switchTab('generator');
+  }
+}
+
+function applyRoleTabs(role) {
+  var isAdmin = (role === 'admin');
+  var tabGen    = document.getElementById('tab-generator');
+  var tabConfig = document.getElementById('tab-config');
+  if (tabGen)    tabGen.style.display    = isAdmin ? '' : 'none';
+  if (tabConfig) tabConfig.style.display = isAdmin ? '' : 'none';
+}
+
+
+
+function doLogout() {
+  if (!confirm('Vas a cerrar sesion y volver a la pantalla de seleccion de balcon. Continuar?')) return;
+  stopScanner();
+  currentBalcon  = 0;
+  selectedBalcon = 0;
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('btn-b1').classList.remove('selected');
+  document.getElementById('btn-b2').classList.remove('selected');
+  document.getElementById('btn-admin').classList.remove('selected');
+  currentRole = 'staff';
+  applyRoleTabs('staff');
+  document.getElementById('login-screen').style.display = 'flex';
+  switchTab('generator');
+}
+
+// ============================================================
+// ===== MÓDULO: AFORO POR SESIÓN =====
+// ============================================================
+
+var SESSIONS_LIST = [
+  { key: 'Domingo de Ramos',          label: 'Dom. Ramos · 29 mar 15:30' },
+  { key: 'Lunes Santo',               label: 'Lunes Santo · 30 mar 16:00' },
+  { key: 'Martes Santo',              label: 'Martes Santo · 31 mar 16:00' },
+  { key: 'Miércoles Santo',           label: 'Miérc. Santo · 1 abr 16:30' },
+  { key: 'Jueves Santo',              label: 'Jueves Santo · 2 abr 17:30' },
+  { key: 'Viernes Santo (Madrugá)',   label: 'V. Santo Madrugá · 3 abr 00:30' },
+  { key: 'Viernes Santo (Tarde)',     label: 'V. Santo Tarde · 3 abr 18:00' },
+  { key: 'Sábado Santo',              label: 'Sáb. Santo · 4 abr 17:00' }
+];
+
+var DEFAULT_AFORO = 16;
+var AFORO_CONFIG_KEY = 'bssv_aforo_config';
+
+// ─── Obtener aforo máximo guardado ───
+function getAforos() {
+  try {
+    var raw = localStorage.getItem(AFORO_CONFIG_KEY + '_' + (STORAGE_KEY || 'default'));
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+
+// ─── Obtener aforo de una sesión ───
+function getAforoForSession(sessionKey) {
+  var aforos = getAforos();
+  return aforos[sessionKey] || DEFAULT_AFORO;
+}
+
+// ─── Contar entradas vendidas por sesión ───
+function countSoldBySession() {
+  var tickets = loadLocalTickets();
+  var counts = {};
+  SESSIONS_LIST.forEach(function(s) { counts[s.key] = 0; });
+  tickets.forEach(function(t) {
+    var sessionName = (t.session || '').split(' · ')[0];
+    SESSIONS_LIST.forEach(function(s) {
+      if (sessionName.startsWith(s.key)) counts[s.key]++;
+    });
+  });
+  return counts;
+}
+
+// ─── Renderizar widget de aforo ───
+function renderAforoWidget(containerId) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+
+  var sold   = countSoldBySession();
+  var aforos = getAforos();
+  var html   = '';
+
+  SESSIONS_LIST.forEach(function(s) {
+    var max      = aforos[s.key] || DEFAULT_AFORO;
+    var vendidas = sold[s.key] || 0;
+    var remaining = Math.max(0, max - vendidas);
+    var pct      = max > 0 ? Math.min(100, Math.round((vendidas / max) * 100)) : 0;
+    var barClass = pct >= 100 ? 'full' : (pct >= 75 ? 'almost' : '');
+    var badge    = pct >= 100 ? '<span class="aforo-badge-full">Completo</span>' : '';
+
+    html += '<div class="aforo-session-row">'
+      + '<div class="aforo-session-name" title="' + s.label + '">' + s.label + '</div>'
+      + '<div class="aforo-bar-wrap"><div class="aforo-bar-fill ' + barClass + '" style="width:' + pct + '%"></div></div>'
+      + '<div class="aforo-counts"><strong>' + vendidas + '</strong>/' + max + '</div>'
+      + badge
+      + '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+// ─── Renderizar ambos widgets ───
+function renderAllAforoWidgets() {
+  renderAforoWidget('aforo-rows-gen');
+  renderAforoWidget('aforo-rows-acc');
+}
+
+// ─── Renderizar inputs de configuración (solo admin) ───
+function renderAforoConfigInputs() {
+  var container = document.getElementById('aforo-config-inputs');
+  if (!container) return;
+  var aforos = getAforos();
+  var html = '';
+  SESSIONS_LIST.forEach(function(s) {
+    var val = aforos[s.key] || DEFAULT_AFORO;
+    html += '<div class="aforo-config-item">'
+      + '<label title="' + s.label + '">' + s.label + '</label>'
+      + '<input type="number" min="1" max="200" value="' + val + '" data-session="' + s.key + '" id="aforo-input-' + s.key.replace(/[\s()]/g,'-') + '">'
+      + '</div>';
+  });
+  container.innerHTML = html;
+}
+
+// ─── Guardar aforos desde config ───
+function saveAforo() {
+  var aforos = {};
+  SESSIONS_LIST.forEach(function(s) {
+    var inputId = 'aforo-input-' + s.key.replace(/[\s()]/g,'-');
+    var el = document.getElementById(inputId);
+    if (el) aforos[s.key] = parseInt(el.value) || DEFAULT_AFORO;
+  });
+  localStorage.setItem(AFORO_CONFIG_KEY + '_' + (STORAGE_KEY || 'default'), JSON.stringify(aforos));
+  renderAllAforoWidgets();
+  showToast('Aforos guardados correctamente');
+}
+
+// ─── Restablecer a 16 ───
+function resetAforo() {
+  if (!confirm('Restablecer todos los aforos a 16 entradas por sesión?')) return;
+  localStorage.removeItem(AFORO_CONFIG_KEY + '_' + (STORAGE_KEY || 'default'));
+  renderAforoConfigInputs();
+  renderAllAforoWidgets();
+  showToast('Aforos restablecidos a 16');
 }
 
 
