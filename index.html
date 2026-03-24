@@ -3295,7 +3295,27 @@ function onAdminBalconFilterChange() {
 function renderAccessTable() {
   renderAllAforoWidgets();
   var filterVal = document.getElementById('access-session-filter').value;
-  var tickets   = loadTickets();
+
+  // If Sheets mode and local is empty, pull first then render
+  if (gsGetMode() === 'sheets' && loadLocalTickets().length === 0) {
+    gsReadTickets().then(function(sheetsTickets) {
+      if (sheetsTickets.length > 0) {
+        saveLocalTickets(sheetsTickets);
+        updateNavBadge();
+      }
+      _renderAccessTableInner(filterVal);
+      _doRenderAforoWidgets();
+    }).catch(function() {
+      _renderAccessTableInner(filterVal);
+    });
+    return; // wait for async
+  }
+
+  _renderAccessTableInner(filterVal);
+}
+
+function _renderAccessTableInner(filterVal) {
+  var tickets = loadLocalTickets();
 
   if (filterVal !== 'all') {
     var sessionName = filterVal.split('|')[0];
@@ -3317,10 +3337,6 @@ function renderAccessTable() {
   table.style.display = 'table';
   empty.style.display = 'none';
 
-  // Build batch map using createdAt when available.
-  // For old tickets where each had a unique createdAt (milliseconds apart),
-  // fall back to grouping by name+session as a proxy for "same purchase".
-  // Step 1: count how many tickets share each createdAt
   var createdAtCount = {};
   tickets.forEach(function(t) {
     var key = t.createdAt || '';
@@ -3329,14 +3345,11 @@ function renderAccessTable() {
 
   var batchMap = {};
   tickets.forEach(function(t, i) {
-    // Use createdAt only if multiple tickets share it (real batch)
-    // Otherwise fall back to name+session grouping
     var key;
     if (t.createdAt && createdAtCount[t.createdAt] > 1) {
       key = t.createdAt;
     } else {
-      // Group solo tickets or old tickets by name+session
-      key = 'solo_' + t.id; // each standalone
+      key = 'solo_' + t.id;
     }
     if (!batchMap[key]) batchMap[key] = { count: 0, lastIndex: -1 };
     batchMap[key].count++;
@@ -3344,11 +3357,10 @@ function renderAccessTable() {
   });
 
   tbody.innerHTML = tickets.map(function(t, i) {
-    var key         = t.createdAt || ('solo_' + t.id);
-    var batchInfo   = batchMap[key];
-    var isLast      = (batchInfo.lastIndex === i);
-    var batchCount  = batchInfo.count;
-    return renderRow(t, isLast, batchCount);
+    var key       = (t.createdAt && createdAtCount[t.createdAt] > 1) ? t.createdAt : ('solo_' + t.id);
+    var batchInfo = batchMap[key];
+    var isLast    = (batchInfo.lastIndex === i);
+    return renderRow(t, isLast, batchInfo.count);
   }).join('');
 
   updateStats(tickets);
