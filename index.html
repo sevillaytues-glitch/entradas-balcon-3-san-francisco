@@ -1422,6 +1422,7 @@
               <option value="VIP">VIP</option>
               <option value="Empresa">Empresa</option>
               <option value="Prensa">Prensa</option>
+              <option value="Infantil">Infantil</option>
               <option value="Honorífica">Honorífica</option>
             </select>
           </div>
@@ -1438,14 +1439,14 @@
           <div class="form-group">
             <label for="f-session">Sesión</label>
             <select id="f-session" onchange="updatePreview()">
-              <option value="Domingo de Ramos|29 marzo|16:30">Domingo de Ramos 29 marzo 16:30</option>
-              <option value="Lunes Santo|30 marzo|16:30">Lunes Santo 30 marzo 16:30</option>
-              <option value="Martes Santo|31 marzo|16:30">Martes Santo 31 marzo 16:30</option>
+              <option value="Domingo de Ramos|29 marzo|15:30">Domingo de Ramos 29 marzo 15:30</option>
+              <option value="Lunes Santo|30 marzo|16:00">Lunes Santo 30 marzo 16:00</option>
+              <option value="Martes Santo|31 marzo|16:00">Martes Santo 31 marzo 16:00</option>
               <option value="Miércoles Santo|1 abril|16:30">Miércoles Santo 1 abril 16:30</option>
               <option value="Jueves Santo|2 abril|17:30">Jueves Santo 2 abril 17:30</option>
-              <option value="Viernes Santo (Madrugá)|3 abril|01:30">Viernes Santo (Madrugá) 3 abril 01:30</option>
+              <option value="Viernes Santo (Madrugá)|3 abril|00:30">Viernes Santo (Madrugá) 3 abril 00:30</option>
               <option value="Viernes Santo (Tarde)|3 abril|18:00">Viernes Santo (Tarde) 3 abril 18:00</option>
-              <option value="Sábado Santo|4 abril|17:00">Sábado Santo 4 abril 17:00</option>
+              <option value="Sábado Santo|4 abril|16:30">Sábado Santo 4 abril 16:30</option>
             </select>
           </div>
         </div>
@@ -1459,7 +1460,7 @@
         <div class="form-row">
           <div class="form-group">
             <label for="f-prefix">Prefijo (máx. 4 letras)</label>
-            <input type="text" id="f-prefix" value="BSSV" maxlength="4" placeholder="ABCD"
+            <input type="text" id="f-prefix" value="B3SF" maxlength="4" placeholder="ABCD"
               oninput="this.value=this.value.toUpperCase(); updatePreview()">
           </div>
           <div class="form-group">
@@ -1627,14 +1628,14 @@
         <label for="access-session-filter">Filtrar por sesión</label>
         <select id="access-session-filter" onchange="renderAccessTable()">
           <option value="all">Todas las sesiones</option>
-          <option value="Domingo de Ramos|29 marzo|16:30">Domingo de Ramos · 29 marzo 16:30</option>
-          <option value="Lunes Santo|30 marzo|16:30">Lunes Santo · 30 marzo 16:30</option>
-          <option value="Martes Santo|31 marzo|16:30">Martes Santo · 31 marzo 16:30</option>
+          <option value="Domingo de Ramos|29 marzo|15:30">Domingo de Ramos · 29 marzo 15:30</option>
+          <option value="Lunes Santo|30 marzo|16:00">Lunes Santo · 30 marzo 16:00</option>
+          <option value="Martes Santo|31 marzo|16:00">Martes Santo · 31 marzo 16:00</option>
           <option value="Miércoles Santo|1 abril|16:30">Miércoles Santo · 1 abril 16:30</option>
           <option value="Jueves Santo|2 abril|17:30">Jueves Santo · 2 abril 17:30</option>
-          <option value="Viernes Santo (Madrugá)|3 abril|01:30">Viernes Santo Madrugá · 3 abril 01:30</option>
+          <option value="Viernes Santo (Madrugá)|3 abril|00:30">Viernes Santo Madrugá · 3 abril 00:30</option>
           <option value="Viernes Santo (Tarde)|3 abril|18:00">Viernes Santo Tarde · 3 abril 18:00</option>
-          <option value="Sábado Santo|4 abril|17:00">Sábado Santo · 4 abril 17:00</option>
+          <option value="Sábado Santo|4 abril|16:30">Sábado Santo · 4 abril 16:30</option>
         </select>
       </div>
       <button class="btn btn-excel" onclick="exportExcel()" id="btn-excel">
