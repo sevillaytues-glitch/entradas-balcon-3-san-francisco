@@ -2549,11 +2549,11 @@ async function downloadPDF() {
 
     pdf.save('entradas_semana_santa_' + sessionDate.replace(/ /g,'_') + '.pdf');
 
-    // Registrar entradas en localStorage
+    // Registrar entradas secuencialmente (evita pérdidas en Sheets)
     const fullSession = sessionName + ' · ' + sessionDate + ' ' + sessionTime;
     for (let i = 0; i < qty; i++) {
       const ticketId = buildEntryID(prefix, sessionV, counter + i);
-      registerTicket({
+      const ticket = {
         id:            ticketId,
         name:          name,
         company:       company,
@@ -2564,8 +2564,18 @@ async function downloadPDF() {
         paymentStatus: paymentStatus,
         paymentDate:   paymentDateStr,
         status:        'No utilizado',
-        createdAt:     new Date().toISOString()
-      });
+        createdAt:     new Date().toISOString(),
+        accessedAt:    ''
+      };
+      // Guardar localmente
+      const localTickets = loadLocalTickets();
+      localTickets.push(ticket);
+      saveLocalTickets(localTickets);
+      updateNavBadge();
+      // Enviar a Sheets en secuencia (await) — evita que el servidor pierda peticiones
+      if (gsGetMode() === 'sheets') {
+        try { await gsUpsertTicket(ticket); } catch(e) { console.warn('Sheets upsert error:', e.message); }
+      }
     }
 
     document.getElementById('f-counter').value = counter + qty;
