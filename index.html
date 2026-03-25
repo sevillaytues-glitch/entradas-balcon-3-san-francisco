@@ -4530,6 +4530,19 @@ function activateBalcon(num) {
   } else {
     switchTab('generator');
   }
+
+  // Auto-refresh aforo every 30s when in Sheets mode
+  if (window._afoAutoRefresh) clearInterval(window._afoAutoRefresh);
+  window._afoAutoRefresh = setInterval(function() {
+    if (gsGetMode() === 'sheets') {
+      gsReadTickets().then(function(t) {
+        if (t && t.length > 0) { saveLocalTickets(t); updateNavBadge(); }
+        _doRenderAforoWidgets();
+      }).catch(function() { _doRenderAforoWidgets(); });
+    } else {
+      _doRenderAforoWidgets();
+    }
+  }, 30000);
 }
 
 function applyRoleTabs(role) {
@@ -4566,6 +4579,7 @@ function doLogout() {
   applyRoleTabs('staff');
   document.getElementById('login-screen').style.display = 'flex';
   try { sessionStorage.removeItem('bssv_session'); } catch(e) {}
+  if (window._afoAutoRefresh) { clearInterval(window._afoAutoRefresh); window._afoAutoRefresh = null; }
   switchTab('generator');
 }
 
