@@ -2754,61 +2754,7 @@ async function downloadPDF() {
   btn.disabled = true;
 
   try {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [595, 842] });
 
-    for (let i = 0; i < batchTickets.length; i++) {
-      const id = batchTickets[i].id;
-
-      // Build hidden ticket
-      const wrapper = document.createElement('div');
-      wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:595px;height:842px;overflow:hidden;background:#fff;';
-      // Determine cfg: admin uses genBalcon (selected in generator), staff uses their own
-    var pdfCfg;
-    if (currentRole === 'admin') {
-      pdfCfg = BALCON_CONFIG[genBalcon] || BALCON_CONFIG[1];
-    } else {
-      pdfCfg = BALCON_CONFIG[currentBalcon] || BALCON_CONFIG[1];
-    }
-    wrapper.innerHTML = buildTicketHTML(name, company, type, price, sessionName, sessionDate, sessionTime, id, paymentMethod, paymentStatus, paymentDateStr, pdfCfg);
-      document.body.appendChild(wrapper);
-
-      // Generate QR
-      const qrDiv = wrapper.querySelector('.pdf-qr');
-      if (qrDiv) {
-        new QRCode(qrDiv, {
-          text: id, width: 100, height: 100,
-          colorDark: '#0a0a0a', colorLight: '#ffffff',
-          correctLevel: QRCode.CorrectLevel.M
-        });
-      }
-
-      // Wait for QR
-      await new Promise(r => setTimeout(r, 300));
-
-      // Capture
-      const canvas = await html2canvas(wrapper.firstElementChild, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        width: 595,
-        height: 842,
-        logging: false
-      });
-
-      document.body.removeChild(wrapper);
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      if (i > 0) pdf.addPage([595, 842], 'portrait');
-      pdf.addImage(imgData, 'JPEG', 0, 0, 595, 842);
-    }
-
-    // Build descriptive filename: qty + session + client name
-    var cleanName    = buildFileName(name, 30);
-    var cleanSession = buildFileName(sessionName + ' ' + sessionDate, 40);
-    var fileName = qty + ' entrada' + (qty > 1 ? 's' : '') + ' - ' + cleanSession + ' - ' + cleanName + '.pdf';
-    await smartSavePDF(pdf, fileName);
 
     // ── Registrar entradas: Sheets es la fuente de verdad ──
     const fullSession = sessionName + ' · ' + sessionDate + ' ' + sessionTime;
@@ -2867,6 +2813,61 @@ async function downloadPDF() {
     saveLocalTickets(localTickets);
     updateNavBadge();
 
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [595, 842] });
+
+    for (let i = 0; i < batchTickets.length; i++) {
+      const id = batchTickets[i].id;
+
+      // Build hidden ticket
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:595px;height:842px;overflow:hidden;background:#fff;';
+      // Determine cfg: admin uses genBalcon (selected in generator), staff uses their own
+    var pdfCfg;
+    if (currentRole === 'admin') {
+      pdfCfg = BALCON_CONFIG[genBalcon] || BALCON_CONFIG[1];
+    } else {
+      pdfCfg = BALCON_CONFIG[currentBalcon] || BALCON_CONFIG[1];
+    }
+    wrapper.innerHTML = buildTicketHTML(name, company, type, price, sessionName, sessionDate, sessionTime, id, paymentMethod, paymentStatus, paymentDateStr, pdfCfg);
+      document.body.appendChild(wrapper);
+
+      // Generate QR
+      const qrDiv = wrapper.querySelector('.pdf-qr');
+      if (qrDiv) {
+        new QRCode(qrDiv, {
+          text: id, width: 100, height: 100,
+          colorDark: '#0a0a0a', colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
+
+      // Wait for QR
+      await new Promise(r => setTimeout(r, 300));
+
+      // Capture
+      const canvas = await html2canvas(wrapper.firstElementChild, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: 595,
+        height: 842,
+        logging: false
+      });
+
+      document.body.removeChild(wrapper);
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      if (i > 0) pdf.addPage([595, 842], 'portrait');
+      pdf.addImage(imgData, 'JPEG', 0, 0, 595, 842);
+    }
+
+    // Build descriptive filename: qty + session + client name
+    var cleanName    = buildFileName(name, 30);
+    var cleanSession = buildFileName(sessionName + ' ' + sessionDate, 40);
+    var fileName = qty + ' entrada' + (qty > 1 ? 's' : '') + ' - ' + cleanSession + ' - ' + cleanName + '.pdf';
+    await smartSavePDF(pdf, fileName);
 
     document.getElementById('f-counter').value = counter + qty;
     updatePreview();
