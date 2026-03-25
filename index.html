@@ -1745,6 +1745,15 @@
       </div>
     </div>
 
+    <!-- Widget aforo sesiones -->
+    <div class="aforo-widget" id="aforo-widget-gen">
+      <div class="aforo-widget-title">
+        <span>📊 Aforo por sesión</span>
+        <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:3px 8px;" title="Actualizar desde Sheets">↻</button>
+      </div>
+      <div id="aforo-rows-gen"></div>
+    </div>
+
     <!-- Datos del asistente -->
     <div>
       <div class="section-title">Datos del asistente</div>
@@ -1847,15 +1856,6 @@
           <button class="btn btn-ghost" onclick="clearForm()" style="color:#e53e3e;border-color:#3a1a1a;" onmouseover="this.style.borderColor='#e53e3e';this.style.background='rgba(229,62,62,0.08)'" onmouseout="this.style.borderColor='#3a1a1a';this.style.background='transparent'">✕ Limpiar formulario</button>
         </div>
       </div>
-    </div>
-
-    <!-- Widget aforo sesiones -->
-    <div class="aforo-widget" id="aforo-widget-gen">
-      <div class="aforo-widget-title">
-        <span>📊 Aforo por sesión</span>
-        <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:3px 8px;" title="Actualizar desde Sheets">↻</button>
-      </div>
-      <div id="aforo-rows-gen"></div>
     </div>
 
     <!-- Botón descarga -->
@@ -2597,6 +2597,17 @@ function updatePreview() {
   document.getElementById('t-id').textContent           = entryID;
   document.getElementById('t-qr-label').textContent     = entryID;
 
+
+  // Update ticket venue/footer based on active balcon
+  var activeCfg = (currentRole === 'admin')
+    ? (BALCON_CONFIG[genBalcon] || BALCON_CONFIG[1])
+    : (BALCON_CONFIG[currentBalcon] || BALCON_CONFIG[1]);
+  var tVenue = document.getElementById('t-venue');
+  var tFootName = document.getElementById('t-footer-name');
+  var tFootTel  = document.getElementById('t-footer-tel');
+  if (tVenue)    tVenue.textContent    = activeCfg.recinto + ' · ' + activeCfg.address;
+  if (tFootName) tFootName.textContent = activeCfg.org;
+  if (tFootTel)  tFootTel.textContent  = activeCfg.tel;
 
   // Preview box del ID
   document.getElementById('id-preview-box').textContent = entryID;
@@ -3700,6 +3711,7 @@ function switchGenBalcon(num) {
   if (prefixEl) prefixEl.value = cfg.prefix;
 
   updatePreview();
+  renderAllAforoWidgets();
   showToast('Generando para: ' + cfg.recinto);
 }
 
