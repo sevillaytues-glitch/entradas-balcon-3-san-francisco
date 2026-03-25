@@ -3710,6 +3710,12 @@ function switchGenBalcon(num) {
   var prefixEl = document.getElementById('f-prefix');
   if (prefixEl) prefixEl.value = cfg.prefix;
 
+  // Update counter to next available number for this balcon
+  var existingTickets = loadLocalTickets();
+  var nextCounter = existingTickets.length + 1;
+  var counterEl = document.getElementById('f-counter');
+  if (counterEl) counterEl.value = nextCounter;
+
   updatePreview();
   renderAllAforoWidgets();
   showToast('Generando para: ' + cfg.recinto);
@@ -4368,6 +4374,12 @@ function activateBalcon(num) {
   // ── Set default prefix ──
   var prefixEl = document.getElementById('f-prefix');
   if (prefixEl) prefixEl.value = cfg.prefix;
+
+  // Set counter to next available number
+  // After STORAGE_KEY is updated, loadLocalTickets reads the right balcon
+  var existingCount = loadLocalTickets().length;
+  var counterEl = document.getElementById('f-counter');
+  if (counterEl) counterEl.value = existingCount + 1;
 
   // ── Populate gen balcon logos for admin ──
   var genLogo1 = document.getElementById('gen-logo-b1');
