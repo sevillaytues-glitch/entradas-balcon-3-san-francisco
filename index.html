@@ -4531,10 +4531,11 @@ function activateBalcon(num) {
     switchTab('generator');
   }
 
-  // Auto-refresh aforo every 30s when in Sheets mode
+  // Auto-refresh aforo every 30s when credentials are available
   if (window._afoAutoRefresh) clearInterval(window._afoAutoRefresh);
   window._afoAutoRefresh = setInterval(function() {
-    if (gsGetMode() === 'sheets') {
+    var cfg = gsGetConfig();
+    if (cfg.apiKey && cfg.spreadsheetId) {
       gsReadTickets().then(function(t) {
         if (t && t.length > 0) { saveLocalTickets(t); updateNavBadge(); }
         _doRenderAforoWidgets();
@@ -4673,37 +4674,47 @@ function renderAforoWidget(containerId) {
 // ─── Renderizar ambos widgets ───
 
 function syncAndRefreshAforo() {
-  if (gsGetMode() === 'sheets') {
-    showToast('Sincronizando con Sheets...');
+  var cfg = gsGetConfig();
+  var hasSheets = cfg.apiKey && cfg.spreadsheetId;
+
+  if (hasSheets) {
+    showToast('Sincronizando...');
     gsReadTickets().then(function(sheetsTickets) {
-      if (sheetsTickets.length > 0) {
+      if (sheetsTickets && sheetsTickets.length > 0) {
         saveLocalTickets(sheetsTickets);
         updateNavBadge();
+        _doRenderAforoWidgets();
+        showToast('Actualizado: ' + sheetsTickets.length + ' entradas');
+      } else {
+        _doRenderAforoWidgets();
+        showToast('Sin datos en Sheets');
       }
-      _doRenderAforoWidgets();
-      showToast('Aforo actualizado: ' + sheetsTickets.length + ' entradas');
     }).catch(function(e) {
       _doRenderAforoWidgets();
-      showToast('Error al sincronizar: ' + e.message);
+      showToast('Error: ' + e.message);
     });
   } else {
     _doRenderAforoWidgets();
-    showToast('Aforo actualizado');
+    showToast('Aforo actualizado (local)');
   }
 }
 
 function renderAllAforoWidgets() {
-  // If using Sheets mode and local cache is empty, try to pull first
-  if (gsGetMode() === 'sheets' && loadLocalTickets().length === 0) {
+  var cfg = gsGetConfig();
+  var hasSheets = cfg.apiKey && cfg.spreadsheetId;
+  if (hasSheets && loadLocalTickets().length === 0) {
     gsReadTickets().then(function(sheetsTickets) {
-      if (sheetsTickets.length > 0) {
+      if (sheetsTickets && sheetsTickets.length > 0) {
         saveLocalTickets(sheetsTickets);
         updateNavBadge();
         _doRenderAforoWidgets();
+      } else {
+        _doRenderAforoWidgets();
       }
-    }).catch(function() {});
+    }).catch(function() { _doRenderAforoWidgets(); });
+  } else {
+    _doRenderAforoWidgets();
   }
-  _doRenderAforoWidgets();
 }
 
 function _doRenderAforoWidgets() {
