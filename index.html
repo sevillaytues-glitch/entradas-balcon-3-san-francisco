@@ -4433,7 +4433,23 @@ function activateBalcon(num) {
   gsUpdateStatusBar();
 
   // Auto-sync from Sheets on login if configured and local is empty
-  if (gsGetMode() === 'sheets') {
+  // Also sync if mode is 'local' but embedded credentials are available (mobile case)
+  var balconKey = String(num === 'admin' ? 1 : num);
+  var embeddedDef = SHEETS_DEFAULTS[balconKey] || {};
+  var hasEmbeddedSheets = embeddedDef.apiKey && embeddedDef.spreadsheetId && embeddedDef.mode === 'sheets';
+  var shouldSync = (gsGetMode() === 'sheets') || hasEmbeddedSheets;
+  // If mode is sheets but no credentials configured at all, warn the user
+  var cfg = gsGetConfig();
+  if (shouldSync && !cfg.apiKey) {
+    shouldSync = false;
+    if (num !== 'admin') showToast('Configura las credenciales de Sheets para ver los datos en todos los dispositivos');
+  }
+
+  if (shouldSync) {
+    // If embedded has sheets but localStorage says local, activate sheets mode
+    if (hasEmbeddedSheets && gsGetMode() !== 'sheets') {
+      localStorage.setItem(GS_MODE_KEY, 'sheets');
+    }
     var localCount = loadLocalTickets().length;
     if (localCount === 0) {
       gsReadTickets().then(function(sheetsTickets) {
@@ -4448,7 +4464,7 @@ function activateBalcon(num) {
       }).catch(function() { renderAllAforoWidgets(); });
     } else {
       renderAllAforoWidgets();
-      // Background refresh
+      // Background refresh to get latest data
       gsReadTickets().then(function(sheetsTickets) {
         if (sheetsTickets.length > 0) { saveLocalTickets(sheetsTickets); updateNavBadge(); _doRenderAforoWidgets(); }
       }).catch(function() {});
@@ -4456,6 +4472,7 @@ function activateBalcon(num) {
   } else {
     renderAllAforoWidgets();
   }
+
   if (currentRole === 'admin') {
     renderAforoConfigInputs();
     var afCard = document.getElementById('aforo-config-card');
