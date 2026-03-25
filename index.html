@@ -1437,7 +1437,7 @@
   /* Header row */
   .aforo-table-header {
     display: grid;
-    grid-template-columns: 1fr 52px 64px 70px 76px;
+    grid-template-columns: 1fr 58px 68px 80px;
     gap: 0;
     padding: 4px 10px 6px;
     margin-bottom: 2px;
@@ -1455,7 +1455,7 @@
   /* Session rows */
   .aforo-session-row {
     display: grid;
-    grid-template-columns: 1fr 52px 64px 70px 76px;
+    grid-template-columns: 1fr 58px 68px 80px;
     align-items: center;
     gap: 0;
     padding: 8px 10px;
@@ -4633,7 +4633,6 @@ function renderAforoWidget(containerId) {
     + '<span>Sesion</span>'
     + '<span>Total</span>'
     + '<span>Vendidas</span>'
-    + '<span>Pendientes</span>'
     + '<span>Disponibles</span>'
     + '</div>';
 
@@ -4650,7 +4649,6 @@ function renderAforoWidget(containerId) {
       + '<div class="aforo-session-name" title="' + s.label + '">' + s.label + '</div>'
       + '<div class="aforo-cell">' + max + '</div>'
       + '<div class="aforo-cell">' + vendidas + '</div>'
-      + '<div class="aforo-cell">' + (max - vendidas) + '</div>'
       + '<div class="aforo-cell-available ' + availClass + '">' + available + (isFull ? ' <span class="aforo-badge-full">Completo</span>' : '') + '</div>'
       + '</div>';
   });
