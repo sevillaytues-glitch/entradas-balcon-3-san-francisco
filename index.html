@@ -4415,6 +4415,15 @@ function activateBalcon(num) {
   // ── Apply role-based tab visibility ──
   applyRoleTabs(currentRole);
 
+  // ── Save session to sessionStorage (persists on F5) ──
+  try {
+    sessionStorage.setItem('bssv_session', JSON.stringify({
+      balcon: num,
+      role:   BALCON_CONFIG[num].role,
+      genBalcon: (BALCON_CONFIG[num].role === 'admin') ? 1 : num
+    }));
+  } catch(e) {}
+
   // ── Hide login, show app ──
   document.getElementById('login-screen').style.display = 'none';
 
@@ -4497,6 +4506,7 @@ function doLogout() {
   currentRole = 'staff';
   applyRoleTabs('staff');
   document.getElementById('login-screen').style.display = 'flex';
+  try { sessionStorage.removeItem('bssv_session'); } catch(e) {}
   switchTab('generator');
 }
 
@@ -4951,8 +4961,28 @@ async function downloadBatchFromTable(btnEl) {
 // ============================================================
 // INICIALIZACIÓN
 // ============================================================
-// App se inicializa tras el login (activateBalcon)
-// No llamar updatePreview aqui - la pantalla de login está activa
+// Restore session from sessionStorage if available (survives F5)
+(function() {
+  try {
+    var saved = sessionStorage.getItem('bssv_session');
+    if (saved) {
+      var s = JSON.parse(saved);
+      if (s && s.balcon && BALCON_CONFIG[s.balcon]) {
+        // Restore session silently without showing toast
+        var _origShowToast = showToast;
+        showToast = function() {};
+        activateBalcon(s.balcon);
+        // Restore genBalcon for admin
+        if (s.role === 'admin' && s.genBalcon) {
+          switchGenBalcon(s.genBalcon);
+        }
+        showToast = _origShowToast;
+        return;
+      }
+    }
+  } catch(e) {}
+  // No saved session - show login screen (already visible by default)
+})();
 </script>
 </body>
 </html>
