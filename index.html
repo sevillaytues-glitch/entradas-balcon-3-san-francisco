@@ -3270,9 +3270,10 @@ function gsReadTickets() {
     var url = 'https://sheets.googleapis.com/v4/spreadsheets/'
       + cfg.spreadsheetId
       + '/values/' + encodeURIComponent(cfg.sheetName || 'Entradas')
-      + '?key=' + cfg.apiKey;
+      + '?key=' + cfg.apiKey
+      + '&_=' + Date.now(); // cache-buster: forces fresh request every time
 
-    fetch(url)
+    fetch(url, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (!data.values || data.values.length < 2) { resolve([]); return; }
