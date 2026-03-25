@@ -1631,6 +1631,17 @@
   }
   .btn-mark-batch:hover { border-color: var(--gold-dark); color: var(--gold-dark); }
 
+  /* Generator balcon selector (admin) */
+  .gen-balcon-btn {
+    display: flex; align-items: center; gap: 8px;
+    flex: 1; padding: 10px 14px;
+    border: 2px solid var(--border); border-radius: 8px;
+    background: var(--dark2); cursor: pointer;
+    font-family: var(--font-ui); font-size: 12px; font-weight: 500;
+    color: var(--text); transition: all 0.2s;
+  }
+  .gen-balcon-btn:hover { border-color: var(--gold); }
+  .gen-balcon-btn.active { border-color: var(--gold-dark); background: rgba(154,122,46,0.1); color: var(--gold-dark); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -1718,6 +1729,21 @@
 
   <!-- ===== PANEL IZQUIERDO – FORMULARIO ===== -->
   <aside class="panel-form">
+
+    <!-- Selector de balcón (solo admin) -->
+    <div id="gen-balcon-selector" style="display:none;">
+      <div class="section-title">Balcón</div>
+      <div style="display:flex;gap:10px;margin-top:12px;margin-bottom:4px;">
+        <button class="gen-balcon-btn active" id="gen-btn-b1" onclick="switchGenBalcon(1)">
+          <img id="gen-logo-b1" src="" style="height:28px;object-fit:contain;border-radius:3px;">
+          <span>Balcón 3ª Planta</span>
+        </button>
+        <button class="gen-balcon-btn" id="gen-btn-b2" onclick="switchGenBalcon(2)">
+          <img id="gen-logo-b2" src="" style="height:28px;object-fit:contain;border-radius:3px;">
+          <span>Balcón 2ª Planta</span>
+        </button>
+      </div>
+    </div>
 
     <!-- Datos del asistente -->
     <div>
@@ -2676,11 +2702,10 @@ async function downloadPDF() {
       // Build hidden ticket
       const wrapper = document.createElement('div');
       wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:595px;height:842px;overflow:hidden;background:#fff;';
-      // Determine cfg: admin uses prefix to detect balcon, staff uses their own
+      // Determine cfg: admin uses genBalcon (selected in generator), staff uses their own
     var pdfCfg;
     if (currentRole === 'admin') {
-      // Admin generator always uses prefix to identify the balcon
-      pdfCfg = prefix.startsWith('B2') ? BALCON_CONFIG[2] : BALCON_CONFIG[1];
+      pdfCfg = BALCON_CONFIG[genBalcon] || BALCON_CONFIG[1];
     } else {
       pdfCfg = BALCON_CONFIG[currentBalcon] || BALCON_CONFIG[1];
     }
@@ -3639,6 +3664,45 @@ function exportExcel() {
 // ===== NAVEGACION ENTRE TABS =====
 // ============================================================
 
+
+// Switch generator balcon (admin only)
+var genBalcon = 1; // which balcon the admin is generating for
+
+function switchGenBalcon(num) {
+  genBalcon = num;
+  var cfg = BALCON_CONFIG[num];
+
+  // Update button states
+  document.getElementById('gen-btn-b1').classList.toggle('active', num === 1);
+  document.getElementById('gen-btn-b2').classList.toggle('active', num === 2);
+
+  // Update storage + GS keys so tickets go to right balcon
+  STORAGE_KEY   = cfg.storageKey;
+  GS_CONFIG_KEY = cfg.gsConfigKey;
+  GS_MODE_KEY   = cfg.gsModeKey;
+
+  // Update assets
+  LOGO_B64 = window[cfg.logoKey] || LOGO_B64_1;
+  IMG_B64  = window[cfg.imgKey]  || IMG_B64_1;
+
+  // Update ticket preview branding
+  document.getElementById('t-logo').src     = 'data:image/jpeg;base64,' + LOGO_B64;
+  document.getElementById('t-eventimg').src = 'data:image/jpeg;base64,' + IMG_B64;
+  var venue    = document.getElementById('t-venue');
+  var footName = document.getElementById('t-footer-name');
+  var footTel  = document.getElementById('t-footer-tel');
+  if (venue)    venue.textContent    = cfg.recinto + ' · ' + cfg.address;
+  if (footName) footName.textContent = cfg.org;
+  if (footTel)  footTel.textContent  = cfg.tel;
+
+  // Update prefix
+  var prefixEl = document.getElementById('f-prefix');
+  if (prefixEl) prefixEl.value = cfg.prefix;
+
+  updatePreview();
+  showToast('Generando para: ' + cfg.recinto);
+}
+
 function switchTab(tab) {
   var appBody      = document.querySelector('.app-body');
   var panelAccess  = document.getElementById('panel-access');
@@ -4286,12 +4350,23 @@ function activateBalcon(num) {
   if (cap) cap.textContent = cfg.imgCaption;
   var sub = document.querySelector('.app-header-subtitle');
   if (sub) sub.textContent = isAdmin
-    ? 'Balcones 2ª y 3ª Planta San Francisco · Semana Santa 2026'
+    ? 'Administrador · Semana Santa 2026'
     : cfg.recinto + ' · Semana Santa 2026';
 
   // ── Set default prefix ──
   var prefixEl = document.getElementById('f-prefix');
   if (prefixEl) prefixEl.value = cfg.prefix;
+
+  // ── Populate gen balcon logos for admin ──
+  var genLogo1 = document.getElementById('gen-logo-b1');
+  var genLogo2 = document.getElementById('gen-logo-b2');
+  if (genLogo1) genLogo1.src = 'data:image/jpeg;base64,' + LOGO_B64_1;
+  if (genLogo2) genLogo2.src = 'data:image/jpeg;base64,' + LOGO_B64_2;
+
+  // ── For admin: reset to balcon 1 defaults in the generator ──
+  if (isAdmin) {
+    switchGenBalcon(1);
+  }
 
   // ── Apply role-based tab visibility ──
   applyRoleTabs(currentRole);
@@ -4347,16 +4422,19 @@ function activateBalcon(num) {
 
 function applyRoleTabs(role) {
   var isAdmin = (role === 'admin');
-  var tabGen    = document.getElementById('tab-generator');
-  var tabConfig = document.getElementById('tab-config');
+  var tabGen      = document.getElementById('tab-generator');
+  var tabConfig   = document.getElementById('tab-config');
   var adminFilter = document.getElementById('admin-balcon-filter');
+  var genSelector = document.getElementById('gen-balcon-selector');
   if (tabGen)      tabGen.style.display      = isAdmin ? '' : 'none';
   if (tabConfig)   tabConfig.style.display   = isAdmin ? '' : 'none';
   if (adminFilter) adminFilter.style.display = isAdmin ? '' : 'none';
+  if (genSelector) genSelector.style.display = isAdmin ? 'block' : 'none';
   // Reset balcon filter to 1 when logging in as admin
   if (isAdmin) {
     var bf = document.getElementById('access-balcon-filter');
     if (bf) bf.value = '1';
+    genBalcon = 1;
   }
 }
 
