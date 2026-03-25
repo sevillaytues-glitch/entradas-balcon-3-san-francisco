@@ -3337,27 +3337,44 @@ function _renderAccessTableInner(filterVal) {
   table.style.display = 'table';
   empty.style.display = 'none';
 
+  // Step 1: count how many tickets share the same createdAt
   var createdAtCount = {};
   tickets.forEach(function(t) {
-    var key = t.createdAt || '';
-    if (key) createdAtCount[key] = (createdAtCount[key] || 0) + 1;
+    if (t.createdAt) createdAtCount[t.createdAt] = (createdAtCount[t.createdAt] || 0) + 1;
   });
+
+  // Step 2: for tickets with unique createdAt (old format, milliseconds apart),
+  // group them by name+session as a "same purchase" heuristic.
+  // Drop price from the key to avoid number/string type mismatch.
+  var nameSessionGroups = {};
+  tickets.forEach(function(t) {
+    var nsKey = (t.name || '').trim() + '||' + (t.session || '').trim();
+    nameSessionGroups[nsKey] = (nameSessionGroups[nsKey] || 0) + 1;
+  });
+
+  // Step 3: assign a batchKey to each ticket
+  function getBatchKey(t) {
+    if (t.createdAt && createdAtCount[t.createdAt] > 1) {
+      return t.createdAt; // real batch (shared timestamp)
+    }
+    // Old ticket: group by name+session
+    var nsKey = (t.name || '').trim() + '||' + (t.session || '').trim();
+    if (nameSessionGroups[nsKey] > 1) {
+      return 'ns_' + nsKey;
+    }
+    return 'solo_' + t.id; // truly alone
+  }
 
   var batchMap = {};
   tickets.forEach(function(t, i) {
-    var key;
-    if (t.createdAt && createdAtCount[t.createdAt] > 1) {
-      key = t.createdAt;
-    } else {
-      key = 'solo_' + t.id;
-    }
+    var key = getBatchKey(t);
     if (!batchMap[key]) batchMap[key] = { count: 0, lastIndex: -1 };
     batchMap[key].count++;
     batchMap[key].lastIndex = i;
   });
 
   tbody.innerHTML = tickets.map(function(t, i) {
-    var key       = (t.createdAt && createdAtCount[t.createdAt] > 1) ? t.createdAt : ('solo_' + t.id);
+    var key       = getBatchKey(t);
     var batchInfo = batchMap[key];
     var isLast    = (batchInfo.lastIndex === i);
     return renderRow(t, isLast, batchInfo.count);
@@ -4589,8 +4606,14 @@ async function downloadAllFiltered() {
   var sessionLabel = filterVal === 'all'
     ? 'todas las sesiones'
     : buildFileName(filterVal.split('|')[0] + ' ' + (filterVal.split('|')[1]||''), 40);
-  // Add up to 2 client names
-  var clientNames = tickets.slice(0, 2).map(function(t) { return buildFileName(t.name||'', 20); }).join(' ');
+  // Use only unique client names (avoid repeating same name), max 1
+  var seenNames = {};
+  var uniqueNames = [];
+  tickets.forEach(function(t) {
+    var n = buildFileName(t.name||'', 25);
+    if (n && !seenNames[n]) { seenNames[n] = true; uniqueNames.push(n); }
+  });
+  var clientNames = uniqueNames.slice(0, 1).join('');
   var fname = tickets.length + ' entrada' + (tickets.length > 1 ? 's' : '') + ' - ' + sessionLabel + (clientNames ? ' - ' + clientNames : '') + '.pdf';
   await smartSavePDF(pdf, fname);
 
@@ -4607,7 +4630,17 @@ async function downloadBatchFromTable(btnEl) {
 
   // Find all tickets with same createdAt (same purchase batch)
   var allTickets = loadLocalTickets();
+  // Try exact createdAt match first; if only 1 result, fall back to name+session+price
   var batch = allTickets.filter(function(t) { return t.createdAt === createdAt; });
+  if (batch.length <= 1) {
+    // Fallback: group by same name+session+price (for old tickets with unique timestamps)
+    var refTicket = batch.length === 1 ? batch[0] : allTickets.find(function(t) { return t.createdAt === createdAt; });
+    if (refTicket) {
+      batch = allTickets.filter(function(t) {
+        return t.name === refTicket.name && t.session === refTicket.session;
+      });
+    }
+  }
 
   if (batch.length === 0) { showToast('No se encontraron entradas del lote'); return; }
 
