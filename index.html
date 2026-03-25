@@ -1761,11 +1761,20 @@
       </div>
     </div>
 
+    <!-- Indicador activo (solo admin) -->
+    <div id="gen-balcon-status" style="display:none;margin:8px 0 4px;padding:8px 12px;border-radius:6px;background:rgba(154,122,46,0.08);border:1px solid rgba(154,122,46,0.25);font-size:11px;color:var(--gold-dark);font-weight:600;display:flex;align-items:center;gap:6px;">
+      <span>✏️</span>
+      <span id="gen-balcon-status-text">Generando para: Balcón 3ª Planta · Sheets: Balcón 1</span>
+    </div>
+
     <!-- Widget aforo sesiones -->
     <div class="aforo-widget" id="aforo-widget-gen">
       <div class="aforo-widget-title">
         <span>📊 Aforo por sesión</span>
-        <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:3px 8px;" title="Actualizar desde Sheets">↻</button>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost" onclick="debugSheetsData()" style="font-size:10px;padding:3px 8px;" title="Diagnóstico Sheets">🔍</button>
+          <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:3px 8px;" title="Actualizar desde Sheets">↻</button>
+        </div>
       </div>
       <div id="aforo-rows-gen"></div>
     </div>
@@ -2805,9 +2814,20 @@ async function downloadPDF() {
       localTickets.push(ticket);
       saveLocalTickets(localTickets);
       updateNavBadge();
-      // Enviar a Sheets en secuencia (await) — evita que el servidor pierda peticiones
-      if (gsGetMode() === 'sheets') {
-        try { await gsUpsertTicket(ticket); } catch(e) { console.warn('Sheets upsert error:', e.message); }
+      // Enviar a Sheets si hay credenciales (independientemente del modo guardado)
+      var gsCfg = gsGetConfig();
+      if (gsCfg.apiKey && gsCfg.appsScriptUrl) {
+        var uploaded = false;
+        for (var attempt = 0; attempt < 3; attempt++) {
+          try {
+            await gsUpsertTicket(ticket);
+            uploaded = true;
+            break;
+          } catch(e) {
+            if (attempt < 2) await new Promise(function(r) { setTimeout(r, 1000 * (attempt + 1)); });
+          }
+        }
+        if (!uploaded) console.warn('No se pudo subir a Sheets la entrada ' + ticket.id + ' tras 3 intentos');
       }
     }
 
@@ -3336,22 +3356,43 @@ function gsPostToScript(url, payload) {
 }
 
 // ─── Sincronizar: subir local → Sheets ───
-function gsPushLocalToSheets() {
+async function gsPushLocalToSheets() {
   var tickets = loadLocalTickets();
   if (tickets.length === 0) { showToast('No hay entradas locales para subir'); return; }
 
-  gsSetStatus('loading', 'Subiendo ' + tickets.length + ' entradas a Sheets...');
-  var promises = tickets.map(function(t) { return gsUpsertTicket(t); });
+  var gsCfg = gsGetConfig();
+  if (!gsCfg.apiKey || !gsCfg.appsScriptUrl) {
+    showToast('Configura las credenciales de Sheets primero');
+    return;
+  }
 
-  Promise.all(promises)
-    .then(function() {
-      gsSetStatus('ok', tickets.length + ' entradas sincronizadas con Google Sheets');
-      showToast(tickets.length + ' entradas subidas a Google Sheets');
-    })
-    .catch(function(e) {
-      gsSetStatus('error', 'Error al subir: ' + e.message);
-      showToast('Error al subir entradas');
-    });
+  gsSetStatus('loading', 'Subiendo ' + tickets.length + ' entradas...');
+  var ok = 0; var fail = 0;
+
+  for (var i = 0; i < tickets.length; i++) {
+    var t = tickets[i];
+    gsSetStatus('loading', 'Subiendo ' + (i+1) + '/' + tickets.length + '...');
+    var uploaded = false;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        await gsUpsertTicket(t);
+        uploaded = true;
+        ok++;
+        break;
+      } catch(e) {
+        if (attempt < 2) await new Promise(function(r) { setTimeout(r, 1500); });
+      }
+    }
+    if (!uploaded) fail++;
+  }
+
+  if (fail === 0) {
+    gsSetStatus('ok', ok + ' entradas sincronizadas correctamente');
+    showToast('✓ ' + ok + ' entradas subidas a Sheets');
+  } else {
+    gsSetStatus('error', ok + ' ok, ' + fail + ' fallaron');
+    showToast('⚠ ' + fail + ' entradas no pudieron subirse. Intenta de nuevo.');
+  }
 }
 
 // ─── Sincronizar: importar Sheets → local ───
@@ -3772,6 +3813,12 @@ function switchGenBalcon(num) {
   // Update prefix
   var prefixEl = document.getElementById('f-prefix');
   if (prefixEl) prefixEl.value = cfg.prefix;
+
+  // Update status indicator
+  var statusEl = document.getElementById('gen-balcon-status');
+  var statusTxt = document.getElementById('gen-balcon-status-text');
+  if (statusEl) statusEl.style.display = 'flex';
+  if (statusTxt) statusTxt.textContent = '✏️  Generando para: ' + cfg.recinto + (gsGetMode() === 'sheets' ? ' · Sheets activo' : ' · Local');
 
   // Update counter to next available number for this balcon
   var existingTickets = loadLocalTickets();
@@ -4557,6 +4604,8 @@ function applyRoleTabs(role) {
   if (tabConfig)   tabConfig.style.display   = isAdmin ? '' : 'none';
   if (adminFilter) adminFilter.style.display = isAdmin ? '' : 'none';
   if (genSelector) genSelector.style.display = isAdmin ? 'block' : 'none';
+  var genStatus = document.getElementById('gen-balcon-status');
+  if (genStatus) genStatus.style.display = isAdmin ? 'flex' : 'none';
   // Reset balcon filter to 1 when logging in as admin
   if (isAdmin) {
     var bf = document.getElementById('access-balcon-filter');
@@ -4673,6 +4722,31 @@ function renderAforoWidget(containerId) {
 }
 
 // ─── Renderizar ambos widgets ───
+
+
+function debugSheetsData() {
+  var cfg = gsGetConfig();
+  if (!cfg.apiKey || !cfg.spreadsheetId) { alert('Sin credenciales configuradas'); return; }
+  gsReadTickets().then(function(tickets) {
+    // Count by session name
+    var counts = {};
+    tickets.forEach(function(t) {
+      var sn = (t.session || 'SIN_SESION').split(' · ')[0].trim();
+      counts[sn] = (counts[sn] || 0) + 1;
+    });
+    var lines = ['Total: ' + tickets.length + ' entradas en Sheets', ''];
+    Object.keys(counts).sort().forEach(function(k) {
+      lines.push(k + ': ' + counts[k]);
+    });
+    // Also show first 3 raw session values
+    lines.push('');
+    lines.push('Primeras sesiones raw:');
+    tickets.slice(0,5).forEach(function(t) {
+      lines.push(JSON.stringify(t.session));
+    });
+    alert(lines.join('\n'));
+  }).catch(function(e) { alert('Error: ' + e.message); });
+}
 
 function syncAndRefreshAforo() {
   var cfg = gsGetConfig();
