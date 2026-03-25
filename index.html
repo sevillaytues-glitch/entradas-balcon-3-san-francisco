@@ -3022,8 +3022,8 @@ var GS_MODE_KEY   = 'bssv_storage_mode'; // 'local' | 'sheets'
 // Pre-configured Sheets credentials (embedded so all devices work without manual setup)
 // Fill these in once and all devices (PC + mobile) will use them automatically.
 var SHEETS_DEFAULTS = {
-  '1': { apiKey: '', spreadsheetId: '', sheetName: 'Entradas', appsScriptUrl: '', mode: 'local' },
-  '2': { apiKey: '', spreadsheetId: '', sheetName: 'Entradas', appsScriptUrl: '', mode: 'local' }
+  '1': { apiKey: 'AIzaSyBSZDE-YJQOOpkNiq5qbuC3EolslCoSizE', spreadsheetId: '1oWHrQbXfSc6J6B5QJvPx3IKnEcmX3ZgYJ2Vqs6KRlqU', sheetName: 'Entradas', appsScriptUrl: 'https://script.google.com/macros/s/AKfycbwHAp-xGZhmVIj6zE7PkiH-LTVgQOxWBogjO9RXhYisReGmexGyKoBkEjedCcynUFLX/exec', mode: 'sheets' },
+  '2': { apiKey: 'AIzaSyBSZDE-YJQOOpkNiq5qbuC3EolslCoSizE', spreadsheetId: '1HWVDm_YCIE2nt7tuiqMe40Pv-PdJTJzlbePiHmCJKsw', sheetName: 'Entradas', appsScriptUrl: 'https://script.google.com/macros/s/AKfycbxxK2BMk3wn_rUE8s6x0zxH4bc4CALLPMV7rxL7_QZlX0oy8JEPkNSJ9nnQB9gQZgZneA/exec', mode: 'sheets' }
 };
 
 function gsGetConfig() {
@@ -3040,10 +3040,9 @@ function gsGetConfig() {
 function gsGetMode() {
   var saved = localStorage.getItem(GS_MODE_KEY);
   if (saved) return saved;
-  // Fall back to embedded default mode for current balcon
   var balconKey = String(currentBalcon === 'admin' ? 1 : currentBalcon);
   var def = SHEETS_DEFAULTS[balconKey] || {};
-  return def.mode || 'local';
+  return def.mode || 'sheets'; // default to sheets when credentials are embedded
 }
 
 // ─── Cargar configuración en la UI ───
@@ -4587,11 +4586,13 @@ function activateBalcon(num) {
   var prefixEl = document.getElementById('f-prefix');
   if (prefixEl) prefixEl.value = cfg.prefix;
 
-  // Set counter to next available number
-  // After STORAGE_KEY is updated, loadLocalTickets reads the right balcon
-  var existingCount = loadLocalTickets().length;
-  var counterEl = document.getElementById('f-counter');
-  if (counterEl) counterEl.value = existingCount + 1;
+  // Counter will be updated after Sheets sync completes (see sync callback above)
+  // For non-Sheets mode, set from localStorage now
+  if (!shouldSync) {
+    var existingCount = loadLocalTickets().length;
+    var counterEl = document.getElementById('f-counter');
+    if (counterEl) counterEl.value = existingCount + 1;
+  }
 
   // ── Populate gen balcon logos for admin ──
   var genLogo1 = document.getElementById('gen-logo-b1');
@@ -4627,40 +4628,28 @@ function activateBalcon(num) {
   // Auto-sync from Sheets on login if configured and local is empty
   // Also sync if mode is 'local' but embedded credentials are available (mobile case)
   var balconKey = String(num === 'admin' ? 1 : num);
-  var embeddedDef = SHEETS_DEFAULTS[balconKey] || {};
-  var hasEmbeddedSheets = embeddedDef.apiKey && embeddedDef.spreadsheetId && embeddedDef.mode === 'sheets';
-  var shouldSync = (gsGetMode() === 'sheets') || hasEmbeddedSheets;
-  // If mode is sheets but no credentials configured at all, warn the user
   var cfg = gsGetConfig();
-  if (shouldSync && !cfg.apiKey) {
-    shouldSync = false;
-    if (num !== 'admin') showToast('Configura las credenciales de Sheets para ver los datos en todos los dispositivos');
-  }
+  var shouldSync = !!(cfg.apiKey && cfg.spreadsheetId);
 
   if (shouldSync) {
-    // If embedded has sheets but localStorage says local, activate sheets mode
-    if (hasEmbeddedSheets && gsGetMode() !== 'sheets') {
-      localStorage.setItem(GS_MODE_KEY, 'sheets');
-    }
-    var localCount = loadLocalTickets().length;
-    if (localCount === 0) {
-      gsReadTickets().then(function(sheetsTickets) {
-        if (sheetsTickets.length > 0) {
-          saveLocalTickets(sheetsTickets);
-          updateNavBadge();
-          renderAllAforoWidgets();
-          showToast(sheetsTickets.length + ' entradas cargadas desde Sheets');
-        } else {
-          renderAllAforoWidgets();
-        }
-      }).catch(function() { renderAllAforoWidgets(); });
-    } else {
-      renderAllAforoWidgets();
-      // Background refresh to get latest data
-      gsReadTickets().then(function(sheetsTickets) {
-        if (sheetsTickets.length > 0) { saveLocalTickets(sheetsTickets); updateNavBadge(); _doRenderAforoWidgets(); }
-      }).catch(function() {});
-    }
+    // Always sync from Sheets on login — this is the source of truth
+    showToast('Cargando datos...');
+    gsReadTickets().then(function(sheetsTickets) {
+      if (sheetsTickets && sheetsTickets.length > 0) {
+        saveLocalTickets(sheetsTickets);
+      }
+      // Update counter from real data
+      var realCount = loadLocalTickets().length;
+      var counterEl = document.getElementById('f-counter');
+      if (counterEl) counterEl.value = realCount + 1;
+      updateNavBadge();
+      _doRenderAforoWidgets();
+      renderAccessTable();
+      showToast('✓ ' + (sheetsTickets ? sheetsTickets.length : 0) + ' entradas cargadas');
+    }).catch(function(e) {
+      _doRenderAforoWidgets();
+      showToast('Sin conexión — usando datos locales');
+    });
   } else {
     renderAllAforoWidgets();
   }
