@@ -1419,7 +1419,7 @@
     background: var(--dark);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 16px;
+    padding: 14px 16px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.05);
   }
   .aforo-widget-title {
@@ -1428,52 +1428,68 @@
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--gold-dark);
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
-  .aforo-session-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 5px 0;
-    border-bottom: 1px solid rgba(0,0,0,0.04);
+
+  /* Header row */
+  .aforo-table-header {
+    display: grid;
+    grid-template-columns: 1fr 52px 52px 62px;
+    gap: 0;
+    padding: 4px 8px 6px;
+    margin-bottom: 2px;
   }
-  .aforo-session-row:last-child { border-bottom: none; }
+  .aforo-table-header span {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gold-dark);
+    text-align: center;
+  }
+  .aforo-table-header span:first-child { text-align: left; }
+
+  /* Session rows */
+  .aforo-session-row {
+    display: grid;
+    grid-template-columns: 1fr 52px 52px 62px;
+    align-items: center;
+    gap: 0;
+    padding: 7px 8px;
+    border-radius: 5px;
+  }
+  .aforo-session-row:nth-child(odd)  { background: var(--dark2); }
+  .aforo-session-row:nth-child(even) { background: var(--dark3); }
+  .aforo-session-row.row-full { opacity: 0.7; }
+
   .aforo-session-name {
     font-size: 11px;
     color: var(--text);
-    flex: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    padding-right: 8px;
   }
-  .aforo-bar-wrap {
-    flex: 1.4;
-    height: 8px;
-    background: var(--dark3);
-    border-radius: 4px;
-    overflow: hidden;
-    min-width: 60px;
-  }
-  .aforo-bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.4s ease;
-    background: linear-gradient(90deg, #38a169, #68d391);
-  }
-  .aforo-bar-fill.almost  { background: linear-gradient(90deg, #d69e2e, #f6d860); }
-  .aforo-bar-fill.full    { background: linear-gradient(90deg, #e53e3e, #fc8181); }
-  .aforo-counts {
+  .aforo-cell {
     font-size: 11px;
     color: var(--text-muted);
+    text-align: center;
     font-family: 'Courier New', monospace;
-    white-space: nowrap;
-    min-width: 52px;
-    text-align: right;
   }
-  .aforo-counts strong { color: var(--text); }
+  .aforo-cell-available {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+    font-family: var(--font-ui);
+  }
+  .aforo-cell-available.zero  { color: #e53e3e; }
+  .aforo-cell-available.low   { color: #d69e2e; }
+  .aforo-cell-available.ok    { color: #276749; }
+
   .aforo-badge-full {
     font-size: 9px;
     font-weight: 700;
@@ -4543,21 +4559,28 @@ function renderAforoWidget(containerId) {
 
   var sold   = countSoldBySession();
   var aforos = getAforos();
-  var html   = '';
+
+  var html = '<div class="aforo-table-header">'
+    + '<span>Sesion</span>'
+    + '<span>Total</span>'
+    + '<span>Vendidas</span>'
+    + '<span>Disponibles</span>'
+    + '</div>';
 
   SESSIONS_LIST.forEach(function(s) {
-    var max      = aforos[s.key] || DEFAULT_AFORO;
-    var vendidas = sold[s.key] || 0;
-    var remaining = Math.max(0, max - vendidas);
-    var pct      = max > 0 ? Math.min(100, Math.round((vendidas / max) * 100)) : 0;
-    var barClass = pct >= 100 ? 'full' : (pct >= 75 ? 'almost' : '');
-    var badge    = pct >= 100 ? '<span class="aforo-badge-full">Completo</span>' : '';
+    var max       = aforos[s.key] || DEFAULT_AFORO;
+    var vendidas  = sold[s.key] || 0;
+    var available = Math.max(0, max - vendidas);
+    var isFull    = available === 0;
+    var isLow     = available > 0 && available <= 3;
+    var availClass = isFull ? 'zero' : (isLow ? 'low' : 'ok');
+    var rowClass   = isFull ? 'aforo-session-row row-full' : 'aforo-session-row';
 
-    html += '<div class="aforo-session-row">'
+    html += '<div class="' + rowClass + '">'
       + '<div class="aforo-session-name" title="' + s.label + '">' + s.label + '</div>'
-      + '<div class="aforo-bar-wrap"><div class="aforo-bar-fill ' + barClass + '" style="width:' + pct + '%"></div></div>'
-      + '<div class="aforo-counts"><strong>' + vendidas + '</strong>/' + max + '</div>'
-      + badge
+      + '<div class="aforo-cell">' + max + '</div>'
+      + '<div class="aforo-cell">' + vendidas + '</div>'
+      + '<div class="aforo-cell-available ' + availClass + '">' + available + (isFull ? ' <span class="aforo-badge-full">Completo</span>' : '') + '</div>'
       + '</div>';
   });
 
