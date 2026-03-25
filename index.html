@@ -2220,6 +2220,34 @@
         </div>
       </div>
 
+      <!-- Configuración embebida (para todos los dispositivos) -->
+      <div class="config-card" style="border-left:3px solid var(--gold-dark);">
+        <div class="config-card-title">&#128241; Credenciales embebidas (para movil y todos los dispositivos)</div>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6;">
+          Rellena estos campos, descarga el archivo actualizado desde Claude y subelo a GitHub. Todos los dispositivos tendran acceso automatico sin configuracion adicional.
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;margin-bottom:14px;">
+          <div style="grid-column:1/-1;font-size:11px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:0.08em;">Balcon 1 &mdash; Catering Tienda Nueva</div>
+          <div class="form-group"><label>API Key</label><input type="password" id="embed-apikey-1" placeholder="AIzaSy..."></div>
+          <div class="form-group"><label>ID Spreadsheet</label><input type="text" id="embed-sheetid-1" placeholder="1BxiMVs0XRA..."></div>
+          <div class="form-group" style="grid-column:1/-1;"><label>URL Apps Script</label><input type="text" id="embed-script-1" placeholder="https://script.google.com/macros/s/.../exec"></div>
+          <div class="form-group"><label>Modo por defecto</label>
+            <select id="embed-mode-1"><option value="local">Local</option><option value="sheets">Google Sheets</option></select>
+          </div>
+          <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:12px;margin-top:4px;font-size:11px;font-weight:600;color:var(--text);text-transform:uppercase;letter-spacing:0.08em;">Balcon 2 &mdash; Catering El Real</div>
+          <div class="form-group"><label>API Key</label><input type="password" id="embed-apikey-2" placeholder="AIzaSy..."></div>
+          <div class="form-group"><label>ID Spreadsheet</label><input type="text" id="embed-sheetid-2" placeholder="1BxiMVs0XRA..."></div>
+          <div class="form-group" style="grid-column:1/-1;"><label>URL Apps Script</label><input type="text" id="embed-script-2" placeholder="https://script.google.com/macros/s/.../exec"></div>
+          <div class="form-group"><label>Modo por defecto</label>
+            <select id="embed-mode-2"><option value="local">Local</option><option value="sheets">Google Sheets</option></select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="saveEmbeddedConfig()" style="width:auto;padding:10px 24px;">&#128190; Guardar en el codigo (descarga el archivo)</button>
+        <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.6;">
+          &#9888; Tras guardar se descargara un nuevo archivo HTML con las credenciales incluidas. Subelo a GitHub para que funcione en todos los dispositivos.
+        </div>
+      </div>
+
       <!-- Credenciales Google Sheets (visible solo en modo sheets) -->
       <div class="config-card" id="gs-credentials-card" style="display:none;">
         <div class="config-card-title">Credenciales de Google Sheets</div>
@@ -2876,15 +2904,31 @@ var GS_CONFIG_KEY = 'bssv_gs_config';
 var GS_MODE_KEY   = 'bssv_storage_mode'; // 'local' | 'sheets'
 
 // ─── Obtener configuración guardada ───
+// Pre-configured Sheets credentials (embedded so all devices work without manual setup)
+// Fill these in once and all devices (PC + mobile) will use them automatically.
+var SHEETS_DEFAULTS = {
+  '1': { apiKey: '', spreadsheetId: '', sheetName: 'Entradas', appsScriptUrl: '', mode: 'local' },
+  '2': { apiKey: '', spreadsheetId: '', sheetName: 'Entradas', appsScriptUrl: '', mode: 'local' }
+};
+
 function gsGetConfig() {
   try {
     var raw = localStorage.getItem(GS_CONFIG_KEY);
-    return raw ? JSON.parse(raw) : {};
+    if (raw) return JSON.parse(raw);
+    // Fall back to embedded defaults for current balcon
+    var balconKey = String(currentBalcon === 'admin' ? 1 : currentBalcon);
+    var def = SHEETS_DEFAULTS[balconKey] || {};
+    return { apiKey: def.apiKey||'', spreadsheetId: def.spreadsheetId||'', sheetName: def.sheetName||'Entradas', appsScriptUrl: def.appsScriptUrl||'' };
   } catch(e) { return {}; }
 }
 
 function gsGetMode() {
-  return localStorage.getItem(GS_MODE_KEY) || 'local';
+  var saved = localStorage.getItem(GS_MODE_KEY);
+  if (saved) return saved;
+  // Fall back to embedded default mode for current balcon
+  var balconKey = String(currentBalcon === 'admin' ? 1 : currentBalcon);
+  var def = SHEETS_DEFAULTS[balconKey] || {};
+  return def.mode || 'local';
 }
 
 // ─── Cargar configuración en la UI ───
@@ -2900,8 +2944,52 @@ function gsLoadConfigUI() {
   if (cfg.sheetName)     document.getElementById('gs-sheet-name').value        = cfg.sheetName;
   if (cfg.appsScriptUrl) document.getElementById('gs-apps-script-url').value  = cfg.appsScriptUrl;
 
+  // Populate embedded config fields
+  [1, 2].forEach(function(n) {
+    var d = SHEETS_DEFAULTS[String(n)] || {};
+    var el;
+    el = document.getElementById('embed-apikey-' + n);   if (el) el.value = d.apiKey || '';
+    el = document.getElementById('embed-sheetid-' + n);  if (el) el.value = d.spreadsheetId || '';
+    el = document.getElementById('embed-script-' + n);   if (el) el.value = d.appsScriptUrl || '';
+    el = document.getElementById('embed-mode-' + n);     if (el) el.value = d.mode || 'local';
+  });
+
   onStorageModeChange(mode);
   gsUpdateStatusBar();
+}
+
+// Save embedded config by generating downloadable HTML with credentials pre-filled
+function saveEmbeddedConfig() {
+  var newDefaults = {};
+  [1, 2].forEach(function(n) {
+    newDefaults[String(n)] = {
+      apiKey:        (document.getElementById('embed-apikey-' + n) || {}).value || '',
+      spreadsheetId: (document.getElementById('embed-sheetid-' + n) || {}).value || '',
+      appsScriptUrl: (document.getElementById('embed-script-' + n) || {}).value || '',
+      sheetName:     'Entradas',
+      mode:          (document.getElementById('embed-mode-' + n) || {}).value || 'local'
+    };
+  });
+
+  // Read current page source and replace SHEETS_DEFAULTS
+  var currentSrc = document.documentElement.outerHTML;
+  var marker = 'var SHEETS_DEFAULTS = ';
+  var start = currentSrc.indexOf(marker);
+  if (start === -1) { showToast('Error: marcador no encontrado'); return; }
+  var end = currentSrc.indexOf(';\n', start) + 2;
+  var newSrc = currentSrc.slice(0, start)
+    + 'var SHEETS_DEFAULTS = ' + JSON.stringify(newDefaults, null, 2)
+    + ';\n'
+    + currentSrc.slice(end);
+
+  var blob = new Blob([newSrc], { type: 'text/html' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'ticket-generator-configured.html';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Archivo descargado. Subelo a GitHub para activar en todos los dispositivos.');
 }
 
 function onStorageModeChange(mode) {
@@ -3343,12 +3431,12 @@ function _renderAccessTableInner(filterVal) {
     if (t.createdAt) createdAtCount[t.createdAt] = (createdAtCount[t.createdAt] || 0) + 1;
   });
 
-  // Step 2: for tickets with unique createdAt (old format, milliseconds apart),
-  // group them by name+session as a "same purchase" heuristic.
-  // Drop price from the key to avoid number/string type mismatch.
+  // Step 2: group old tickets by name + session NAME only (ignore time, which may differ
+  // between old and new tickets after a schedule change)
   var nameSessionGroups = {};
   tickets.forEach(function(t) {
-    var nsKey = (t.name || '').trim() + '||' + (t.session || '').trim();
+    var sessionName = (t.session || '').split(' · ')[0].trim();
+    var nsKey = (t.name || '').trim() + '||' + sessionName;
     nameSessionGroups[nsKey] = (nameSessionGroups[nsKey] || 0) + 1;
   });
 
@@ -3357,12 +3445,13 @@ function _renderAccessTableInner(filterVal) {
     if (t.createdAt && createdAtCount[t.createdAt] > 1) {
       return t.createdAt; // real batch (shared timestamp)
     }
-    // Old ticket: group by name+session
-    var nsKey = (t.name || '').trim() + '||' + (t.session || '').trim();
+    // Old ticket: group by name + session name only
+    var sessionName = (t.session || '').split(' · ')[0].trim();
+    var nsKey = (t.name || '').trim() + '||' + sessionName;
     if (nameSessionGroups[nsKey] > 1) {
       return 'ns_' + nsKey;
     }
-    return 'solo_' + t.id; // truly alone
+    return 'solo_' + t.id;
   }
 
   var batchMap = {};
@@ -4214,7 +4303,31 @@ function activateBalcon(num) {
   updatePreview();
   updateNavBadge();
   gsUpdateStatusBar();
-  renderAllAforoWidgets();
+
+  // Auto-sync from Sheets on login if configured and local is empty
+  if (gsGetMode() === 'sheets') {
+    var localCount = loadLocalTickets().length;
+    if (localCount === 0) {
+      gsReadTickets().then(function(sheetsTickets) {
+        if (sheetsTickets.length > 0) {
+          saveLocalTickets(sheetsTickets);
+          updateNavBadge();
+          renderAllAforoWidgets();
+          showToast(sheetsTickets.length + ' entradas cargadas desde Sheets');
+        } else {
+          renderAllAforoWidgets();
+        }
+      }).catch(function() { renderAllAforoWidgets(); });
+    } else {
+      renderAllAforoWidgets();
+      // Background refresh
+      gsReadTickets().then(function(sheetsTickets) {
+        if (sheetsTickets.length > 0) { saveLocalTickets(sheetsTickets); updateNavBadge(); _doRenderAforoWidgets(); }
+      }).catch(function() {});
+    }
+  } else {
+    renderAllAforoWidgets();
+  }
   if (currentRole === 'admin') {
     renderAforoConfigInputs();
     var afCard = document.getElementById('aforo-config-card');
@@ -4637,7 +4750,9 @@ async function downloadBatchFromTable(btnEl) {
     var refTicket = batch.length === 1 ? batch[0] : allTickets.find(function(t) { return t.createdAt === createdAt; });
     if (refTicket) {
       batch = allTickets.filter(function(t) {
-        return t.name === refTicket.name && t.session === refTicket.session;
+        var refSessionName = (refTicket.session || '').split(' · ')[0].trim();
+        var tSessionName   = (t.session || '').split(' · ')[0].trim();
+        return t.name === refTicket.name && tSessionName === refSessionName;
       });
     }
   }
