@@ -1951,7 +1951,7 @@
               </div>
               <div class="ticket-field">
                 <div class="ticket-field-label">Recinto</div>
-                <div class="ticket-field-value small">Balcón 3ª Planta<br>San Francisco</div>
+                <div class="ticket-field-value small" id="t-recinto">Balcón 3ª Planta<br>San Francisco</div>
               </div>
               <div class="ticket-field">
                 <div class="ticket-field-label">ID de entrada</div>
@@ -1959,7 +1959,7 @@
               </div>
               <div class="ticket-field">
                 <div class="ticket-field-label">Dirección</div>
-                <div class="ticket-field-value small">Plaza de San Francisco, 8<br>3ª Planta, Sevilla</div>
+                <div class="ticket-field-value small" id="t-address">Plaza de San Francisco, 8<br>3ª Planta, Sevilla</div>
               </div>
             </div>
 
@@ -2605,9 +2605,13 @@ function updatePreview() {
   var tVenue = document.getElementById('t-venue');
   var tFootName = document.getElementById('t-footer-name');
   var tFootTel  = document.getElementById('t-footer-tel');
+  var tRecinto  = document.getElementById('t-recinto');
+  var tAddress  = document.getElementById('t-address');
   if (tVenue)    tVenue.textContent    = activeCfg.recinto + ' · ' + activeCfg.address;
   if (tFootName) tFootName.textContent = activeCfg.org;
   if (tFootTel)  tFootTel.textContent  = activeCfg.tel;
+  if (tRecinto)  tRecinto.innerHTML    = activeCfg.recinto.replace(' San Francisco', '<br>San Francisco');
+  if (tAddress)  tAddress.innerHTML    = activeCfg.address.replace(' – ', '<br>').replace(' - ', '<br>');
 
   // Preview box del ID
   document.getElementById('id-preview-box').textContent = entryID;
