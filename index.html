@@ -2350,6 +2350,16 @@
       <!-- Acciones de sincronizacion -->
       <div class="config-card" id="gs-sync-card" style="display:none;">
         <div class="config-card-title">Sincronizacion de datos</div>
+
+        <!-- Selector de balcon para sincronizacion (solo admin) -->
+        <div id="sync-balcon-selector" style="display:none;margin-bottom:14px;padding:10px 12px;background:rgba(154,122,46,0.07);border-radius:6px;border:1px solid rgba(154,122,46,0.2);">
+          <div style="font-size:11px;font-weight:600;color:var(--gold-dark);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">&#9881; Operando sobre:</div>
+          <div style="display:flex;gap:8px;">
+            <button class="gen-balcon-btn active" id="sync-btn-b1" onclick="switchSyncBalcon(1)" style="flex:1;font-size:11px;padding:8px 10px;">Balcon 1 (Tienda Nueva)</button>
+            <button class="gen-balcon-btn" id="sync-btn-b2" onclick="switchSyncBalcon(2)" style="flex:1;font-size:11px;padding:8px 10px;">Balcon 2 (El Real)</button>
+          </div>
+        </div>
+
         <div class="config-sync-actions">
           <div class="config-sync-item">
             <div>
@@ -3356,9 +3366,20 @@ function gsPostToScript(url, payload) {
 }
 
 // ─── Sincronizar: subir local → Sheets ───
-async function gsPushLocalToSheets() {
+async 
+function switchSyncBalcon(num) {
+  var cfg = BALCON_CONFIG[num];
+  STORAGE_KEY   = cfg.storageKey;
+  GS_CONFIG_KEY = cfg.gsConfigKey;
+  GS_MODE_KEY   = cfg.gsModeKey;
+  document.getElementById('sync-btn-b1').classList.toggle('active', num === 1);
+  document.getElementById('sync-btn-b2').classList.toggle('active', num === 2);
   var tickets = loadLocalTickets();
-  if (tickets.length === 0) { showToast('No hay entradas locales para subir'); return; }
+  showToast('Balcon ' + num + ' seleccionado — ' + tickets.length + ' entradas locales');
+  gsLoadConfigUI();
+}
+
+async function gsPushLocalToSheets() {
 
   var gsCfg = gsGetConfig();
   if (!gsCfg.apiKey || !gsCfg.appsScriptUrl) {
@@ -4606,6 +4627,8 @@ function applyRoleTabs(role) {
   if (genSelector) genSelector.style.display = isAdmin ? 'block' : 'none';
   var genStatus = document.getElementById('gen-balcon-status');
   if (genStatus) genStatus.style.display = isAdmin ? 'flex' : 'none';
+  var syncSel = document.getElementById('sync-balcon-selector');
+  if (syncSel) syncSel.style.display = isAdmin ? 'block' : 'none';
   // Reset balcon filter to 1 when logging in as admin
   if (isAdmin) {
     var bf = document.getElementById('access-balcon-filter');
