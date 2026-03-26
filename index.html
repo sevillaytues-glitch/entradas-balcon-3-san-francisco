@@ -4830,7 +4830,7 @@ function renderAforoWidget(containerId, storageKey) {
     + '</div>';
 
   SESSIONS_LIST.forEach(function(s) {
-    var max       = aforos[s.key] || DEFAULT_AFORO;
+    var max       = (aforos[s.key] !== undefined && aforos[s.key] !== null) ? aforos[s.key] : DEFAULT_AFORO;
     var vendidas  = sold[s.key] || 0;
     var available = Math.max(0, max - vendidas);
     var isFull    = available === 0;
@@ -4951,7 +4951,7 @@ function renderAforoConfigInputs() {
   try { var raw = localStorage.getItem(key); aforos = raw ? JSON.parse(raw) : {}; } catch(e) {}
   var html = '';
   SESSIONS_LIST.forEach(function(s) {
-    var val = aforos[s.key] || DEFAULT_AFORO;
+    var val = (aforos[s.key] !== undefined && aforos[s.key] !== null) ? aforos[s.key] : DEFAULT_AFORO;
     html += '<div class="aforo-config-item">'
       + '<label title="' + s.label + '">' + s.label + '</label>'
       + '<input type="number" min="0" max="200" value="' + val + '" data-session="' + s.key + '" id="aforo-input-' + s.key.replace(/[\s()]/g,'-') + '">'
