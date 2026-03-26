@@ -3385,6 +3385,38 @@ function gsMarkAccessed(id, accessedAt) {
 }
 
 // --- Helper POST que maneja CORS y redirecciones de Apps Script ---
+
+// ─── Guardar aforos en Sheets (pestaña "Aforos") ───
+function gsSaveAforos(aforos, balconNum) {
+  var cfg = gsGetConfig();
+  if (!cfg.appsScriptUrl) return Promise.reject(new Error('Sin Apps Script URL'));
+  return gsPostToScript(cfg.appsScriptUrl, {
+    action: 'upsertAforos',
+    balcon: balconNum || (currentBalcon === 'admin' ? afoBalcon : currentBalcon),
+    aforos: aforos
+  });
+}
+
+// ─── Leer aforos desde Sheets ───
+function gsLoadAforos(balconNum) {
+  var cfg = gsGetConfig();
+  if (!cfg.apiKey || !cfg.spreadsheetId) return Promise.reject(new Error('Sin credenciales'));
+  var url = 'https://sheets.googleapis.com/v4/spreadsheets/'
+    + cfg.spreadsheetId
+    + '/values/Aforos?key=' + cfg.apiKey + '&_=' + Date.now();
+  return fetch(url, { cache: 'no-store' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.values || data.values.length < 2) return {};
+      var result = {};
+      // Format: row[0]=session, row[1]=max
+      data.values.slice(1).forEach(function(row) {
+        if (row[0]) result[row[0]] = parseInt(row[1]) || 0;
+      });
+      return result;
+    });
+}
+
 function gsPostToScript(url, payload) {
   return fetch(url, {
     method: 'POST',
@@ -4699,14 +4731,29 @@ function activateBalcon(num) {
       if (sheetsTickets && sheetsTickets.length > 0) {
         saveLocalTickets(sheetsTickets);
       }
-      // Update counter from real data
-      var realCount = loadLocalTickets().length;
-      var counterEl = document.getElementById('f-counter');
-      if (counterEl) counterEl.value = realCount + 1;
-      updateNavBadge();
-      _doRenderAforoWidgets();
-      renderAccessTable();
-      showToast('✓ ' + (sheetsTickets ? sheetsTickets.length : 0) + ' entradas cargadas');
+      // Also load aforos from Sheets
+      gsLoadAforos(num === 'admin' ? 1 : num).then(function(sheetsAforos) {
+        if (sheetsAforos && Object.keys(sheetsAforos).length > 0) {
+          localStorage.setItem(getAforoStorageKey(num === 'admin' ? 1 : num), JSON.stringify(sheetsAforos));
+        }
+        // Update counter from real data
+        var realCount = loadLocalTickets().length;
+        var counterEl = document.getElementById('f-counter');
+        if (counterEl) counterEl.value = realCount + 1;
+        updateNavBadge();
+        _doRenderAforoWidgets();
+        renderAccessTable();
+        showToast('✓ ' + (sheetsTickets ? sheetsTickets.length : 0) + ' entradas cargadas');
+      }).catch(function() {
+        // Aforos not in Sheets yet, use local
+        var realCount = loadLocalTickets().length;
+        var counterEl = document.getElementById('f-counter');
+        if (counterEl) counterEl.value = realCount + 1;
+        updateNavBadge();
+        _doRenderAforoWidgets();
+        renderAccessTable();
+        showToast('✓ ' + (sheetsTickets ? sheetsTickets.length : 0) + ' entradas cargadas');
+      });
     }).catch(function(e) {
       _doRenderAforoWidgets();
       showToast('Sin conexión — usando datos locales');
@@ -5018,14 +5065,26 @@ function saveAforo() {
     var el = document.getElementById(inputId);
     if (el) { var v = parseInt(el.value); aforos[s.key] = isNaN(v) ? DEFAULT_AFORO : Math.max(0, v); }
   });
+  // Save locally
   localStorage.setItem(getAforoStorageKey(afoBalcon), JSON.stringify(aforos));
-  // Re-render widgets using the saved balcon's storage key
+  // Re-render widgets immediately
   var savedKey = BALCON_CONFIG[afoBalcon].storageKey;
   renderAforoWidget('aforo-rows-gen', savedKey);
   renderAforoWidget('aforo-rows-acc', savedKey);
   renderAccessTable();
-  var balconName = afoBalcon === 1 ? 'Balcón 1' : 'Balcón 2';
-  showToast('Aforos de ' + balconName + ' guardados');
+  var balconName = afoBalcon === 1 ? 'Balcon 1' : 'Balcon 2';
+  // Save to Sheets so all devices sync
+  var prevSK = STORAGE_KEY; var prevGCK = GS_CONFIG_KEY;
+  STORAGE_KEY   = BALCON_CONFIG[afoBalcon].storageKey;
+  GS_CONFIG_KEY = BALCON_CONFIG[afoBalcon].gsConfigKey;
+  showToast('Guardando aforos de ' + balconName + '...');
+  gsSaveAforos(aforos, afoBalcon).then(function() {
+    showToast('Aforos de ' + balconName + ' guardados en Sheets');
+  }).catch(function() {
+    showToast('Aforos guardados solo en local (sin conexion Sheets)');
+  });
+  STORAGE_KEY   = prevSK;
+  GS_CONFIG_KEY = prevGCK;
 }
 
 // ─── Restablecer a 16 ───
