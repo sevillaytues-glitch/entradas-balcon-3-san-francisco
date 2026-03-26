@@ -1710,6 +1710,9 @@
     <button class="btn btn-primary login-submit" onclick="doLogin()" style="margin-top:12px;">
       Acceder
     </button>
+    <button onclick="runDiagnostic()" style="margin-top:8px;width:100%;padding:8px;background:transparent;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text-muted);cursor:pointer;">
+      🔍 Diagnóstico de conexión
+    </button>
   </div>
 </div>
 
@@ -4548,6 +4551,53 @@ function diagAllTickets() {
   } catch(e) { results.push('Error leyendo B2: ' + e.message); }
   
   alert(results.join('\n'));
+}
+
+
+async function runDiagnostic() {
+  var lines = ['=== DIAGNÓSTICO ===', ''];
+  
+  // 1. Check SHEETS_DEFAULTS
+  var d1 = SHEETS_DEFAULTS['1'] || {};
+  var d2 = SHEETS_DEFAULTS['2'] || {};
+  lines.push('Credenciales B1: ' + (d1.apiKey ? 'OK' : 'VACÍAS'));
+  lines.push('Credenciales B2: ' + (d2.apiKey ? 'OK' : 'VACÍAS'));
+  lines.push('Modo B1: ' + (d1.mode || 'local'));
+  lines.push('Modo B2: ' + (d2.mode || 'local'));
+  lines.push('');
+  
+  // 2. Check localStorage
+  try {
+    var lsB1 = JSON.parse(localStorage.getItem('bssv_tickets_2026') || '[]');
+    var lsB2 = JSON.parse(localStorage.getItem('b2sf_tickets_2026') || '[]');
+    lines.push('Local B1: ' + lsB1.length + ' entradas');
+    lines.push('Local B2: ' + lsB2.length + ' entradas');
+  } catch(e) { lines.push('Error localStorage: ' + e.message); }
+  lines.push('');
+  
+  // 3. Try Sheets API for B1
+  lines.push('Probando Sheets B1...');
+  try {
+    var url1 = 'https://sheets.googleapis.com/v4/spreadsheets/' + d1.spreadsheetId 
+      + '/values/Entradas?key=' + d1.apiKey + '&_=' + Date.now();
+    var r1 = await fetch(url1, { cache: 'no-store' });
+    var j1 = await r1.json();
+    if (j1.error) lines.push('B1 ERROR: ' + j1.error.message);
+    else lines.push('B1 OK: ' + ((j1.values||[]).length - 1) + ' filas');
+  } catch(e) { lines.push('B1 FETCH ERROR: ' + e.message); }
+  
+  // 4. Try Sheets API for B2
+  lines.push('Probando Sheets B2...');
+  try {
+    var url2 = 'https://sheets.googleapis.com/v4/spreadsheets/' + d2.spreadsheetId 
+      + '/values/Entradas?key=' + d2.apiKey + '&_=' + Date.now();
+    var r2 = await fetch(url2, { cache: 'no-store' });
+    var j2 = await r2.json();
+    if (j2.error) lines.push('B2 ERROR: ' + j2.error.message);
+    else lines.push('B2 OK: ' + ((j2.values||[]).length - 1) + ' filas');
+  } catch(e) { lines.push('B2 FETCH ERROR: ' + e.message); }
+  
+  alert(lines.join('\n'));
 }
 
 function activateBalcon(num) {
