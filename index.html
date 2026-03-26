@@ -2264,6 +2264,17 @@
         <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6;">
           Define el número máximo de entradas disponibles para cada sesión. Por defecto 16. Los cambios se guardan en este dispositivo.
         </p>
+
+        <!-- Selector de balcón -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <button class="gen-balcon-btn active" id="aforo-btn-b1" onclick="switchAforoBalcon(1)" style="flex:1;font-size:11px;padding:8px 12px;">
+            Balcón 1 · Tienda Nueva
+          </button>
+          <button class="gen-balcon-btn" id="aforo-btn-b2" onclick="switchAforoBalcon(2)" style="flex:1;font-size:11px;padding:8px 12px;">
+            Balcón 2 · El Real
+          </button>
+        </div>
+
         <div class="aforo-config-grid" id="aforo-config-inputs"></div>
         <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="saveAforo()" style="width:auto;padding:10px 24px;">&#128190; Guardar aforos</button>
@@ -4746,9 +4757,12 @@ var DEFAULT_AFORO = 16;
 var AFORO_CONFIG_KEY = 'bssv_aforo_config';
 
 // ─── Obtener aforo máximo guardado ───
-function getAforos() {
+function getAforos(storageKeyOverride) {
   try {
-    var raw = localStorage.getItem(AFORO_CONFIG_KEY + '_' + (STORAGE_KEY || 'default'));
+    var key = storageKeyOverride
+      ? AFORO_CONFIG_KEY + '_' + storageKeyOverride
+      : getAforoStorageKey(currentBalcon === 'admin' ? (typeof genBalcon !== 'undefined' ? genBalcon : 1) : currentBalcon);
+    var raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : {};
   } catch(e) { return {}; }
 }
@@ -4891,10 +4905,27 @@ function _doRenderAforoWidgets() {
 }
 
 // ─── Renderizar inputs de configuración (solo admin) ───
+
+var afoBalcon = 1; // which balcon the admin is configuring aforo for
+
+function switchAforoBalcon(num) {
+  afoBalcon = num;
+  document.getElementById('aforo-btn-b1').classList.toggle('active', num === 1);
+  document.getElementById('aforo-btn-b2').classList.toggle('active', num === 2);
+  renderAforoConfigInputs();
+}
+
+function getAforoStorageKey(num) {
+  var cfg = BALCON_CONFIG[num || afoBalcon];
+  return AFORO_CONFIG_KEY + '_' + (cfg ? cfg.storageKey : 'default');
+}
+
 function renderAforoConfigInputs() {
   var container = document.getElementById('aforo-config-inputs');
   if (!container) return;
-  var aforos = getAforos();
+  var key = getAforoStorageKey(afoBalcon);
+  var aforos = {};
+  try { var raw = localStorage.getItem(key); aforos = raw ? JSON.parse(raw) : {}; } catch(e) {}
   var html = '';
   SESSIONS_LIST.forEach(function(s) {
     var val = aforos[s.key] || DEFAULT_AFORO;
@@ -4914,18 +4945,20 @@ function saveAforo() {
     var el = document.getElementById(inputId);
     if (el) aforos[s.key] = parseInt(el.value) || DEFAULT_AFORO;
   });
-  localStorage.setItem(AFORO_CONFIG_KEY + '_' + (STORAGE_KEY || 'default'), JSON.stringify(aforos));
+  localStorage.setItem(getAforoStorageKey(afoBalcon), JSON.stringify(aforos));
   renderAllAforoWidgets();
-  showToast('Aforos guardados correctamente');
+  var balconName = afoBalcon === 1 ? 'Balcón 1' : 'Balcón 2';
+  showToast('Aforos de ' + balconName + ' guardados');
 }
 
 // ─── Restablecer a 16 ───
 function resetAforo() {
-  if (!confirm('Restablecer todos los aforos a 16 entradas por sesión?')) return;
-  localStorage.removeItem(AFORO_CONFIG_KEY + '_' + (STORAGE_KEY || 'default'));
+  var balconName = afoBalcon === 1 ? 'Balcón 1' : 'Balcón 2';
+  if (!confirm('Restablecer aforos de ' + balconName + ' a 16 entradas por sesión?')) return;
+  localStorage.removeItem(getAforoStorageKey(afoBalcon));
   renderAforoConfigInputs();
   renderAllAforoWidgets();
-  showToast('Aforos restablecidos a 16');
+  showToast('Aforos de ' + balconName + ' restablecidos a 16');
 }
 
 
