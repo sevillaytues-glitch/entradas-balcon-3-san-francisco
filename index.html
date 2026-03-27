@@ -80,7 +80,7 @@
   .app-body {
     flex: 1;
     display: grid;
-    grid-template-columns: 600px 1fr;
+    grid-template-columns: 780px 600px;
     gap: 0;
     min-height: calc(100vh - 69px);
   }
@@ -1770,16 +1770,22 @@
       <span id="gen-balcon-status-text">Generando para: Balcón 3ª Planta · Sheets: Balcón 1</span>
     </div>
 
-    <!-- Widget aforo sesiones -->
-    <div class="aforo-widget" id="aforo-widget-gen">
-      <div class="aforo-widget-title">
-        <span>📊 Aforo por sesión</span>
-        <div style="display:flex;gap:6px;">
-          <button class="btn btn-ghost" onclick="debugSheetsData()" style="font-size:10px;padding:3px 8px;" title="Diagnóstico Sheets">🔍</button>
-          <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:3px 8px;" title="Actualizar desde Sheets">↻</button>
+    <!-- Widget aforo sesiones DUAL (B1 + B2 lado a lado) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="aforo-widget">
+        <div class="aforo-widget-title">
+          <span>📊 Balcón 1 · Tienda Nueva</span>
+          <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:2px 6px;">↻</button>
         </div>
+        <div id="aforo-rows-b1-gen"></div>
       </div>
-      <div id="aforo-rows-gen"></div>
+      <div class="aforo-widget">
+        <div class="aforo-widget-title">
+          <span>📊 Balcón 2 · El Real</span>
+          <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:2px 6px;">↻</button>
+        </div>
+        <div id="aforo-rows-b2-gen"></div>
+      </div>
     </div>
 
     <!-- Datos del asistente -->
@@ -2070,13 +2076,22 @@
     </div>
   </div>
 
-  <!-- Widget aforo accesos -->
-  <div class="aforo-widget" id="aforo-widget-acc">
-    <div class="aforo-widget-title">
-      <span>📊 Aforo por sesión</span>
-      <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:3px 8px;" title="Actualizar desde Sheets">↻</button>
+  <!-- Widget aforo accesos DUAL (B1 + B2) -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="aforo-widget">
+      <div class="aforo-widget-title">
+        <span>📊 Balcón 1 · Tienda Nueva</span>
+        <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:2px 6px;">↻</button>
+      </div>
+      <div id="aforo-rows-b1-acc"></div>
     </div>
-    <div id="aforo-rows-acc"></div>
+    <div class="aforo-widget">
+      <div class="aforo-widget-title">
+        <span>📊 Balcón 2 · El Real</span>
+        <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:2px 6px;">↻</button>
+      </div>
+      <div id="aforo-rows-b2-acc"></div>
+    </div>
   </div>
 
   <!-- Contadores -->
@@ -5018,10 +5033,12 @@ function renderAllAforoWidgets() {
 }
 
 function _doRenderAforoWidgets() {
-  // Always use the explicit storage key for the active balcon
-  var sk = STORAGE_KEY || 'bssv_tickets_2026';
-  renderAforoWidget('aforo-rows-gen', sk);
-  renderAforoWidget('aforo-rows-acc', sk);
+  var sk1 = BALCON_CONFIG[1].storageKey;
+  var sk2 = BALCON_CONFIG[2].storageKey;
+  renderAforoWidget('aforo-rows-b1-gen', sk1);
+  renderAforoWidget('aforo-rows-b2-gen', sk2);
+  renderAforoWidget('aforo-rows-b1-acc', sk1);
+  renderAforoWidget('aforo-rows-b2-acc', sk2);
 }
 
 // ─── Renderizar inputs de configuración (solo admin) ───
@@ -5069,8 +5086,8 @@ function saveAforo() {
   localStorage.setItem(getAforoStorageKey(afoBalcon), JSON.stringify(aforos));
   // Re-render widgets immediately
   var savedKey = BALCON_CONFIG[afoBalcon].storageKey;
-  renderAforoWidget('aforo-rows-gen', savedKey);
-  renderAforoWidget('aforo-rows-acc', savedKey);
+  renderAforoWidget('aforo-rows-b' + afoBalcon + '-gen', savedKey);
+  renderAforoWidget('aforo-rows-b' + afoBalcon + '-acc', savedKey);
   renderAccessTable();
   var balconName = afoBalcon === 1 ? 'Balcon 1' : 'Balcon 2';
   // Save to Sheets so all devices sync
