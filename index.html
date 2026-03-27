@@ -204,7 +204,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 32px 24px;
+    justify-content: flex-start;
+    padding: 32px 60px;
     overflow-y: auto;
     max-height: calc(100vh - 69px);
   }
@@ -1749,6 +1750,24 @@
   <!-- ===== PANEL IZQUIERDO – FORMULARIO ===== -->
   <aside class="panel-form">
 
+    <!-- Widget aforo sesiones DUAL (B1 + B2 lado a lado) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="aforo-widget">
+        <div class="aforo-widget-title">
+          <span>📊 Balcón 1 · Tienda Nueva</span>
+          <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:2px 6px;">↻</button>
+        </div>
+        <div id="aforo-rows-b1-gen"></div>
+      </div>
+      <div class="aforo-widget">
+        <div class="aforo-widget-title">
+          <span>📊 Balcón 2 · El Real</span>
+          <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:2px 6px;">↻</button>
+        </div>
+        <div id="aforo-rows-b2-gen"></div>
+      </div>
+    </div>
+
     <!-- Selector de balcón (solo admin) -->
     <div id="gen-balcon-selector" style="display:none;">
       <div class="section-title">Balcón</div>
@@ -1768,24 +1787,6 @@
     <div id="gen-balcon-status" style="display:none;margin:8px 0 4px;padding:8px 12px;border-radius:6px;background:rgba(154,122,46,0.08);border:1px solid rgba(154,122,46,0.25);font-size:11px;color:var(--gold-dark);font-weight:600;display:flex;align-items:center;gap:6px;">
       <span>✏️</span>
       <span id="gen-balcon-status-text">Generando para: Balcón 3ª Planta · Sheets: Balcón 1</span>
-    </div>
-
-    <!-- Widget aforo sesiones DUAL (B1 + B2 lado a lado) -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="aforo-widget">
-        <div class="aforo-widget-title">
-          <span>📊 Balcón 1 · Tienda Nueva</span>
-          <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:2px 6px;">↻</button>
-        </div>
-        <div id="aforo-rows-b1-gen"></div>
-      </div>
-      <div class="aforo-widget">
-        <div class="aforo-widget-title">
-          <span>📊 Balcón 2 · El Real</span>
-          <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:2px 6px;">↻</button>
-        </div>
-        <div id="aforo-rows-b2-gen"></div>
-      </div>
     </div>
 
     <!-- Datos del asistente -->
@@ -2033,6 +2034,24 @@
 <!-- ===== PANEL CONTROL DE ACCESOS ===== -->
 <div id="panel-access" class="access-panel" style="display:none;">
 
+  <!-- Widget aforo accesos DUAL (B1 + B2) -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="aforo-widget">
+      <div class="aforo-widget-title">
+        <span>📊 Balcón 1 · Tienda Nueva</span>
+        <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:2px 6px;">↻</button>
+      </div>
+      <div id="aforo-rows-b1-acc"></div>
+    </div>
+    <div class="aforo-widget">
+      <div class="aforo-widget-title">
+        <span>📊 Balcón 2 · El Real</span>
+        <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:2px 6px;">↻</button>
+      </div>
+      <div id="aforo-rows-b2-acc"></div>
+    </div>
+  </div>
+
   <!-- Cabecera del panel -->
   <div class="access-header">
     <div class="access-header-left">
@@ -2041,13 +2060,10 @@
     </div>
     <div class="access-header-right">
 
-      <!-- Selector de balcón (solo admin) -->
-      <div class="access-filter" id="admin-balcon-filter" style="display:none;">
-        <label for="access-balcon-filter">Balcón</label>
-        <select id="access-balcon-filter" onchange="onAdminBalconFilterChange()">
-          <option value="1">Balcón 3ª Planta (Tienda Nueva)</option>
-          <option value="2">Balcón 2ª Planta (El Real)</option>
-        </select>
+      <!-- Botones de balcón (solo admin) -->
+      <div id="admin-balcon-filter" style="display:none;gap:6px;">
+        <button class="gen-balcon-btn active" id="acc-btn-b1" onclick="onAdminBalconBtnClick(1)" style="font-size:11px;padding:7px 12px;white-space:nowrap;">Balcón 1</button>
+        <button class="gen-balcon-btn" id="acc-btn-b2" onclick="onAdminBalconBtnClick(2)" style="font-size:11px;padding:7px 12px;white-space:nowrap;">Balcón 2</button>
       </div>
       <div class="access-filter">
         <label for="access-session-filter">Filtrar por sesión</label>
@@ -2073,24 +2089,6 @@
       <button class="btn btn-ghost btn-danger" onclick="clearAllTickets()" style="font-size:11px;padding:8px 12px;">
         🗑 Limpiar todo
       </button>
-    </div>
-  </div>
-
-  <!-- Widget aforo accesos DUAL (B1 + B2) -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-    <div class="aforo-widget">
-      <div class="aforo-widget-title">
-        <span>📊 Balcón 1 · Tienda Nueva</span>
-        <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:2px 6px;">↻</button>
-      </div>
-      <div id="aforo-rows-b1-acc"></div>
-    </div>
-    <div class="aforo-widget">
-      <div class="aforo-widget-title">
-        <span>📊 Balcón 2 · El Real</span>
-        <button class="btn btn-ghost" onclick="syncAndRefreshAforo()" style="font-size:10px;padding:2px 6px;">↻</button>
-      </div>
-      <div id="aforo-rows-b2-acc"></div>
     </div>
   </div>
 
@@ -3616,6 +3614,21 @@ function updateTicketStatus(id, status) {
 // ===== MÓDULO: RENDERIZADO DE TABLA =====
 // ============================================================
 
+
+function onAdminBalconBtnClick(num) {
+  var cfg = BALCON_CONFIG[num];
+  STORAGE_KEY   = cfg.storageKey;
+  GS_CONFIG_KEY = cfg.gsConfigKey;
+  GS_MODE_KEY   = cfg.gsModeKey;
+  document.getElementById('acc-btn-b1').classList.toggle('active', num === 1);
+  document.getElementById('acc-btn-b2').classList.toggle('active', num === 2);
+  // Update hidden select to keep compatibility
+  var sel = document.getElementById('access-balcon-filter');
+  if (sel) sel.value = num;
+  renderAccessTable();
+  showToast('Viendo: ' + cfg.recinto);
+}
+
 function onAdminBalconFilterChange() {
   // Admin switches between balcon data without logging out
   var balconNum = parseInt(document.getElementById('access-balcon-filter').value);
@@ -4816,7 +4829,7 @@ function applyRoleTabs(role) {
   var genSelector = document.getElementById('gen-balcon-selector');
   if (tabGen)      tabGen.style.display      = isAdmin ? '' : 'none';
   if (tabConfig)   tabConfig.style.display   = isAdmin ? '' : 'none';
-  if (adminFilter) adminFilter.style.display = isAdmin ? '' : 'none';
+  if (adminFilter) adminFilter.style.display = isAdmin ? 'flex' : 'none';
   if (genSelector) genSelector.style.display = isAdmin ? 'block' : 'none';
   var genStatus = document.getElementById('gen-balcon-status');
   if (genStatus) genStatus.style.display = isAdmin ? 'flex' : 'none';
