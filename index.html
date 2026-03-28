@@ -4671,15 +4671,21 @@ async function runDiagnostic() {
 
 // Fetch tickets for one balcon directly from its Sheet
 function fetchBalconTickets(balconNum) {
+  // Read credentials directly from SHEETS_DEFAULTS or localStorage for this balcon
   var bCfg = BALCON_CONFIG[balconNum];
-  var savedGCK = GS_CONFIG_KEY;
-  GS_CONFIG_KEY = bCfg.gsConfigKey;
-  var cfg = gsGetConfig();
-  GS_CONFIG_KEY = savedGCK;
-  if (!cfg.apiKey || !cfg.spreadsheetId) return Promise.resolve([]);
-  var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + cfg.spreadsheetId
-    + '/values/' + encodeURIComponent(cfg.sheetName || 'Entradas')
-    + '?key=' + cfg.apiKey + '&_=' + Date.now();
+  var lsRaw = localStorage.getItem(bCfg.gsConfigKey);
+  var creds = lsRaw ? JSON.parse(lsRaw) : {};
+  var def   = SHEETS_DEFAULTS[String(balconNum)] || {};
+  var apiKey        = creds.apiKey        || def.apiKey        || '';
+  var spreadsheetId = creds.spreadsheetId || def.spreadsheetId || '';
+  var sheetName     = creds.sheetName     || def.sheetName     || 'Entradas';
+
+  if (!apiKey || !spreadsheetId) return Promise.resolve([]);
+
+  var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + spreadsheetId
+    + '/values/' + encodeURIComponent(sheetName)
+    + '?key=' + apiKey + '&_=' + Date.now();
+
   return fetch(url, { cache: 'no-store' }).then(function(r) { return r.json(); })
     .then(function(data) {
       if (!data.values || data.values.length < 2) return [];
