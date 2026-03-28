@@ -4627,18 +4627,17 @@ function diagAllTickets() {
 
 
 async function runDiagnostic() {
-  var lines = ['=== DIAGNÓSTICO ===', ''];
+  var lines = ['=== DIAGNOSTICO ===', ''];
   
-  // 1. Check SHEETS_DEFAULTS
   var d1 = SHEETS_DEFAULTS['1'] || {};
   var d2 = SHEETS_DEFAULTS['2'] || {};
-  lines.push('Credenciales B1: ' + (d1.apiKey ? 'OK' : 'VACÍAS'));
-  lines.push('Credenciales B2: ' + (d2.apiKey ? 'OK' : 'VACÍAS'));
-  lines.push('Modo B1: ' + (d1.mode || 'local'));
-  lines.push('Modo B2: ' + (d2.mode || 'local'));
+  lines.push('Creds B1: ' + (d1.apiKey ? 'OK' : 'VACIAS'));
+  lines.push('Creds B2: ' + (d2.apiKey ? 'OK' : 'VACIAS'));
+  lines.push('SpreadID B1: ' + (d1.spreadsheetId || 'VACIO').slice(0,15) + '...');
+  lines.push('SpreadID B2: ' + (d2.spreadsheetId || 'VACIO').slice(0,15) + '...');
+  lines.push('IDs iguales: ' + (d1.spreadsheetId === d2.spreadsheetId ? 'SI (ERROR!)' : 'NO (correcto)'));
   lines.push('');
-  
-  // 2. Check localStorage
+
   try {
     var lsB1 = JSON.parse(localStorage.getItem('bssv_tickets_2026') || '[]');
     var lsB2 = JSON.parse(localStorage.getItem('b2sf_tickets_2026') || '[]');
@@ -4646,9 +4645,8 @@ async function runDiagnostic() {
     lines.push('Local B2: ' + lsB2.length + ' entradas');
   } catch(e) { lines.push('Error localStorage: ' + e.message); }
   lines.push('');
-  
-  // 3. Try Sheets API for B1
-  lines.push('Probando Sheets B1...');
+
+  lines.push('Probando Sheet B1...');
   try {
     var url1 = 'https://sheets.googleapis.com/v4/spreadsheets/' + d1.spreadsheetId 
       + '/values/Entradas?key=' + d1.apiKey + '&_=' + Date.now();
@@ -4657,9 +4655,8 @@ async function runDiagnostic() {
     if (j1.error) lines.push('B1 ERROR: ' + j1.error.message);
     else lines.push('B1 OK: ' + ((j1.values||[]).length - 1) + ' filas');
   } catch(e) { lines.push('B1 FETCH ERROR: ' + e.message); }
-  
-  // 4. Try Sheets API for B2
-  lines.push('Probando Sheets B2...');
+
+  lines.push('Probando Sheet B2...');
   try {
     var url2 = 'https://sheets.googleapis.com/v4/spreadsheets/' + d2.spreadsheetId 
       + '/values/Entradas?key=' + d2.apiKey + '&_=' + Date.now();
@@ -4668,7 +4665,7 @@ async function runDiagnostic() {
     if (j2.error) lines.push('B2 ERROR: ' + j2.error.message);
     else lines.push('B2 OK: ' + ((j2.values||[]).length - 1) + ' filas');
   } catch(e) { lines.push('B2 FETCH ERROR: ' + e.message); }
-  
+
   alert(lines.join('\n'));
 }
 
