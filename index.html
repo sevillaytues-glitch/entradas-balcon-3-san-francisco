@@ -1677,49 +1677,31 @@
 <!-- ===== CABECERA APP ===== -->
 <!-- ===== PANTALLA LOGIN / SELECTOR BALCÓN ===== -->
 <div id="login-screen">
-  <div class="login-card">
+  <div class="login-card" style="max-width:420px;">
     <div class="login-title">Semana Santa Sevilla 2026</div>
-    <div class="login-subtitle">Selecciona tu perfil e introduce la contraseña</div>
+    <div class="login-subtitle">Introduce tu usuario y contraseña</div>
 
-    <div class="login-balcon-btns">
-      <button class="login-balcon-btn" id="btn-b1" onclick="selectBalcon(1)">
-        <img id="login-logo-1" src="" alt="Catering Tienda Nueva">
-        <div>
-          <div class="login-balcon-name">Balcón 3ª Planta</div>
-          <div class="login-balcon-place">Catering Tienda Nueva</div>
-          <div class="login-balcon-place" style="margin-top:6px;font-size:10px;color:var(--gold-dark);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">Staff</div>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-top:24px;">
+      <div class="form-group">
+        <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);">Usuario</label>
+        <input type="text" id="login-username" placeholder="Introduce tu usuario..." 
+          autocomplete="username" autocapitalize="none" spellcheck="false"
+          style="margin-top:6px;" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+      </div>
+      <div class="form-group">
+        <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);">Contraseña</label>
+        <div class="login-pass-group" style="margin-top:6px;">
+          <input type="password" id="login-pass" placeholder="Introduce la contraseña..."
+            autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+          <button onclick="togglePassVis()" class="btn-pass-toggle" aria-label="Mostrar contraseña">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
         </div>
-      </button>
-      <button class="login-balcon-btn" id="btn-b2" onclick="selectBalcon(2)">
-        <img id="login-logo-2" src="" alt="Catering El Real">
-        <div>
-          <div class="login-balcon-name">Balcón 2ª Planta</div>
-          <div class="login-balcon-place">Catering El Real</div>
-          <div class="login-balcon-place" style="margin-top:6px;font-size:10px;color:var(--gold-dark);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">Staff</div>
-        </div>
-      </button>
-      <button class="login-balcon-btn" id="btn-admin" onclick="selectBalcon('admin')">
-        <div class="login-balcon-icon">&#128737;</div>
-        <div>
-          <div class="login-balcon-name">Administrador</div>
-          <div class="login-balcon-place">Acceso completo</div>
-          <div class="login-balcon-place" style="margin-top:6px;font-size:10px;color:var(--gold-dark);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">Admin</div>
-        </div>
-      </button>
-    </div>
-
-    <div class="login-divider"></div>
-
-    <div class="login-pass-group">
-      <div class="login-pass-label">Contraseña</div>
-      <div class="login-pass-wrap">
-        <input type="password" id="login-pass" placeholder="Introduce la contraseña..."
-          onkeydown="if(event.key==='Enter') doLogin()">
-        <button class="btn btn-ghost" onclick="toggleInputVis('login-pass')" style="padding:9px 12px;flex-shrink:0;">&#128065;</button>
       </div>
     </div>
-    <div class="login-error" id="login-error"></div>
-    <button class="btn btn-primary login-submit" onclick="doLogin()" style="margin-top:12px;">
+
+    <div id="login-error" style="color:#e53e3e;font-size:12px;margin-top:8px;min-height:18px;text-align:center;"></div>
+    <button class="btn btn-primary login-submit" onclick="doLogin()" style="margin-top:16px;">
       Acceder
     </button>
     <button onclick="runDiagnostic()" style="margin-top:8px;width:100%;padding:8px;background:transparent;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text-muted);cursor:pointer;">
@@ -1727,6 +1709,9 @@
     </button>
   </div>
 </div>
+
+
+
 
 <header class="app-header">
   <img src="" id="app-logo" alt="Logo" style="height:36px;border-radius:4px;"><div id="app-logo-admin" style="display:none;font-size:28px;line-height:1;">&#128737;</div>
@@ -2571,8 +2556,8 @@ var LOGO_B64   = LOGO_B64_1;
 var IMG_B64    = IMG_B64_1;
 
 // Inyectar logos en pantalla de login
-document.getElementById('login-logo-1').src = 'data:image/jpeg;base64,' + LOGO_B64_1;
-document.getElementById('login-logo-2').src = 'data:image/jpeg;base64,' + LOGO_B64_2;
+var ll1 = document.getElementById('login-logo-1'); if(ll1) ll1.src = 'data:image/jpeg;base64,' + LOGO_B64_1;
+var ll2 = document.getElementById('login-logo-2'); if(ll2) ll2.src = 'data:image/jpeg;base64,' + LOGO_B64_2;
 
 // Inyectar imágenes (se actualizan al hacer login)
 document.getElementById('app-logo').src = 'data:image/jpeg;base64,' + LOGO_B64;
@@ -4502,6 +4487,7 @@ var BALCON_CONFIG = {
     logoKey:   'LOGO_B64_1',
     imgKey:    'IMG_B64_1',
     imgCaption:'Plaza de San Francisco · Sevilla',
+    username:  'balcon3',
     password:  'staff1',
     storageKey:'bssv_tickets_2026',
     gsConfigKey:'bssv_gs_config',
@@ -4518,6 +4504,7 @@ var BALCON_CONFIG = {
     logoKey:   'LOGO_B64_2',
     imgKey:    'IMG_B64_2',
     imgCaption:'Plaza de San Francisco · Sevilla',
+    username:  'balcon2',
     password:  'staff2',
     storageKey:'b2sf_tickets_2026',
     gsConfigKey:'b2sf_gs_config',
@@ -4534,6 +4521,7 @@ var BALCON_CONFIG = {
     logoKey:   null,
     imgKey:    'IMG_B64_1',
     imgCaption:'Plaza de San Francisco · Sevilla',
+    username:  'admin',
     password:  'admin2026',
     storageKey:'bssv_tickets_2026',
     gsConfigKey:'bssv_gs_config',
@@ -4556,19 +4544,40 @@ function selectBalcon(num) {
 }
 
 function doLogin() {
-  if (!selectedBalcon) {
-    document.getElementById('login-error').textContent = 'Selecciona un perfil primero.';
+  var username = (document.getElementById('login-username').value || '').trim().toLowerCase();
+  var pass     = (document.getElementById('login-pass').value || '');
+  var errorEl  = document.getElementById('login-error');
+
+  if (!username) {
+    errorEl.textContent = 'Introduce tu usuario.';
+    document.getElementById('login-username').focus();
     return;
   }
-  var pass = document.getElementById('login-pass').value;
-  var cfg  = BALCON_CONFIG[selectedBalcon];
-  if (pass !== cfg.password) {
-    document.getElementById('login-error').textContent = 'Contrasena incorrecta. Intentalo de nuevo.';
-    document.getElementById('login-pass').value = '';
+  if (!pass) {
+    errorEl.textContent = 'Introduce la contraseña.';
     document.getElementById('login-pass').focus();
     return;
   }
-  activateBalcon(selectedBalcon);
+
+  // Find matching balcon by username
+  var found = null;
+  [1, 2, 'admin'].forEach(function(key) {
+    var cfg = BALCON_CONFIG[key];
+    if (cfg && cfg.username && cfg.username.toLowerCase() === username && cfg.password === pass) {
+      found = key;
+    }
+  });
+
+  if (!found) {
+    errorEl.textContent = 'Usuario o contraseña incorrectos.';
+    document.getElementById('login-pass').value = '';
+  var unEl = document.getElementById('login-username'); if(unEl) unEl.value = '';
+    document.getElementById('login-pass').focus();
+    return;
+  }
+
+  errorEl.textContent = '';
+  activateBalcon(found);
 }
 
 
@@ -4895,6 +4904,7 @@ function doLogout() {
   currentBalcon  = 0;
   selectedBalcon = 0;
   document.getElementById('login-pass').value = '';
+  var unEl = document.getElementById('login-username'); if(unEl) unEl.value = '';
   document.getElementById('login-error').textContent = '';
   document.getElementById('btn-b1').classList.remove('selected');
   document.getElementById('btn-b2').classList.remove('selected');
@@ -5140,10 +5150,31 @@ function renderAllAforoWidgets() {
 function _doRenderAforoWidgets() {
   var sk1 = BALCON_CONFIG[1].storageKey;
   var sk2 = BALCON_CONFIG[2].storageKey;
-  renderAforoWidget('aforo-rows-b1-gen', sk1);
-  renderAforoWidget('aforo-rows-b2-gen', sk2);
-  renderAforoWidget('aforo-rows-b1-acc', sk1);
-  renderAforoWidget('aforo-rows-b2-acc', sk2);
+
+  if (currentRole === 'admin') {
+    // Admin sees both
+    renderAforoWidget('aforo-rows-b1-gen', sk1);
+    renderAforoWidget('aforo-rows-b2-gen', sk2);
+    renderAforoWidget('aforo-rows-b1-acc', sk1);
+    renderAforoWidget('aforo-rows-b2-acc', sk2);
+  } else {
+    // Staff sees only their own balcon
+    var myKey = STORAGE_KEY;
+    var isB1  = (currentBalcon == 1);
+    // Show own, hide other
+    var genOwn   = isB1 ? 'aforo-rows-b1-gen' : 'aforo-rows-b2-gen';
+    var genOther = isB1 ? 'aforo-rows-b2-gen' : 'aforo-rows-b1-gen';
+    var accOwn   = isB1 ? 'aforo-rows-b1-acc' : 'aforo-rows-b2-acc';
+    var accOther = isB1 ? 'aforo-rows-b2-acc' : 'aforo-rows-b1-acc';
+    // Hide the other balcon widget entirely
+    ['aforo-rows-b' + (isB1 ? 2 : 1) + '-gen',
+     'aforo-rows-b' + (isB1 ? 2 : 1) + '-acc'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) { var w = el.closest('.aforo-widget'); if (w) w.style.display = 'none'; }
+    });
+    renderAforoWidget(genOwn, myKey);
+    renderAforoWidget(accOwn, myKey);
+  }
 }
 
 // ─── Renderizar inputs de configuración (solo admin) ───
