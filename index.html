@@ -2793,7 +2793,18 @@ async function downloadPDF() {
     // ── Registrar entradas: Sheets es la fuente de verdad ──
     const fullSession = sessionName + ' · ' + sessionDate + ' ' + sessionTime;
     const batchId = new Date().toISOString();
-    const gsCfg = gsGetConfig();
+    // Get credentials directly from the active balcon (not from global GS_CONFIG_KEY)
+    var pdfBalconNum = (currentRole === 'admin') ? genBalcon : currentBalcon;
+    var pdfBalconNumStr = String(pdfBalconNum);
+    var lsCredRaw = localStorage.getItem(BALCON_CONFIG[pdfBalconNum].gsConfigKey);
+    var lsCred = lsCredRaw ? JSON.parse(lsCredRaw) : {};
+    var defCred = SHEETS_DEFAULTS[pdfBalconNumStr] || {};
+    const gsCfg = {
+      apiKey:        lsCred.apiKey        || defCred.apiKey        || '',
+      appsScriptUrl: lsCred.appsScriptUrl || defCred.appsScriptUrl || '',
+      spreadsheetId: lsCred.spreadsheetId || defCred.spreadsheetId || '',
+      sheetName:     lsCred.sheetName     || defCred.sheetName     || 'Entradas'
+    };
     const hasSheets = !!(gsCfg.apiKey && gsCfg.appsScriptUrl);
 
     // Construir todos los tickets del lote
@@ -2824,7 +2835,7 @@ async function downloadPDF() {
         let uploaded = false;
         for (let attempt = 0; attempt < 4; attempt++) {
           try {
-            await gsUpsertTicket(t);
+            await gsUpsertTicket(t, gsCfg);
             uploaded = true;
             break;
           } catch(e) {
@@ -3398,8 +3409,8 @@ function gsReadTickets() {
 }
 
 // ─── Escribir / actualizar entrada en Sheets via Apps Script ───
-function gsUpsertTicket(ticket) {
-  var cfg = gsGetConfig();
+function gsUpsertTicket(ticket, explicitCfg) {
+  var cfg = explicitCfg || gsGetConfig();
   if (!cfg.appsScriptUrl) return Promise.reject(new Error('Sin URL de Apps Script'));
   return gsPostToScript(cfg.appsScriptUrl, { action: 'upsert', ticket: ticket });
 }
