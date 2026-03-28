@@ -220,13 +220,21 @@
 
   /* ===== TICKET (vista previa + PDF) ===== */
   .ticket-wrapper {
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    border-radius: 2px;
     width: 595px;
+    flex-shrink: 0;
+  }
+  .ticket-preview-scaler {
+    width: 429px;
+    height: 606px;
+    overflow: hidden;
+    margin: 0 auto;
+    flex-shrink: 0;
+  }
+  .ticket-preview-scaler .ticket-wrapper {
     transform: scale(0.72);
-    transform-origin: top center;
-    margin-bottom: -240px;
-    align-self: center;
+    transform-origin: top left;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.4);
+    border-radius: 2px;
   }
 
   .panel-preview {
@@ -1917,6 +1925,7 @@
   <main class="panel-preview">
     <div class="preview-label">Vista previa de la entrada</div>
 
+    <div class="ticket-preview-scaler">
     <div class="ticket-wrapper">
       <!-- Este div es el que se exporta a PDF -->
       <div id="ticket-preview">
@@ -2032,6 +2041,7 @@
 
       </div><!-- /ticket-preview -->
     </div><!-- /ticket-wrapper -->
+    </div><!-- /ticket-preview-scaler -->
   </main>
 
 </div><!-- /app-body -->
