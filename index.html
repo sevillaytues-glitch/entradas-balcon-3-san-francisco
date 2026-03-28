@@ -2718,8 +2718,6 @@ function undoLastEntries() {
   var tickets = loadLocalTickets();
   if (tickets.length === 0) { showToast('No hay entradas que eliminar'); return; }
 
-  // Determinar cuántas entradas se generaron en el último lote
-  // Se agrupan por createdAt (mismo timestamp = mismo lote)
   var lastTs = tickets[tickets.length - 1].createdAt;
   var batch = [];
   for (var i = tickets.length - 1; i >= 0; i--) {
@@ -2735,17 +2733,29 @@ function undoLastEntries() {
 
   if (!confirm(msg + '\n\nEsta accion no se puede deshacer.')) return;
 
-  // Decrementar el contador al valor antes del lote
+  // Get IDs to delete from Sheets
+  var idsToDelete = batch.map(function(i) { return tickets[i].id; });
+
+  // Decrementar el contador
   var currentCounter = parseInt(document.getElementById('f-counter').value) || 1;
   var newCounter = Math.max(1, currentCounter - qty);
   document.getElementById('f-counter').value = newCounter;
 
-  // Eliminar las entradas del lote
+  // Eliminar del localStorage
   batch.forEach(function(i) { tickets.splice(i, 1); });
   saveLocalTickets(tickets);
   updateNavBadge();
   updatePreview();
-  showToast('Eliminadas ' + qty + ' entrada' + (qty > 1 ? 's' : '') + '. Contador ajustado a ' + String(newCounter).padStart(4,'0'));
+  _doRenderAforoWidgets();
+  showToast('Eliminadas ' + qty + ' entrada' + (qty > 1 ? 's' : '') + '. Sincronizando con Sheets...');
+
+  // Eliminar de Sheets enviando acción deleteTickets
+  var cfg = gsGetConfig();
+  if (cfg.appsScriptUrl) {
+    gsPostToScript(cfg.appsScriptUrl, { action: 'deleteTickets', ids: idsToDelete })
+      .then(function() { showToast('Entradas eliminadas de Sheets'); })
+      .catch(function() { showToast('Eliminadas localmente. Puedes subir desde Configuracion para sincronizar.'); });
+  }
 }
 
 // ============================================================
@@ -2890,7 +2900,8 @@ async function downloadPDF() {
     // Build descriptive filename: qty + session + client name
     var cleanName    = buildFileName(name, 30);
     var cleanSession = buildFileName(sessionName + ' ' + sessionDate, 40);
-    var fileName = qty + ' entrada' + (qty > 1 ? 's' : '') + ' - ' + cleanSession + ' - ' + cleanName + '.pdf';
+    var balconLabel = buildFileName(pdfCfg.recinto, 20);
+    var fileName = balconLabel + ' - ' + qty + ' entrada' + (qty > 1 ? 's' : '') + ' - ' + cleanSession + ' - ' + cleanName + '.pdf';
     await smartSavePDF(pdf, fileName);
 
     document.getElementById('f-counter').value = counter + qty;
@@ -3054,8 +3065,14 @@ function gsGetConfig() {
   try {
     var raw = localStorage.getItem(GS_CONFIG_KEY);
     if (raw) return JSON.parse(raw);
-    // Fall back to embedded defaults for current balcon
-    var balconKey = String(currentBalcon === 'admin' ? 1 : currentBalcon);
+    // Fall back to embedded defaults — use genBalcon for admin in generator context
+    var balconKey;
+    if (currentBalcon === 'admin') {
+      // GS_CONFIG_KEY tells us which balcon is active
+      balconKey = GS_CONFIG_KEY === BALCON_CONFIG[2].gsConfigKey ? '2' : '1';
+    } else {
+      balconKey = String(currentBalcon);
+    }
     var def = SHEETS_DEFAULTS[balconKey] || {};
     return { apiKey: def.apiKey||'', spreadsheetId: def.spreadsheetId||'', sheetName: def.sheetName||'Entradas', appsScriptUrl: def.appsScriptUrl||'' };
   } catch(e) { return {}; }
@@ -4859,18 +4876,14 @@ function activateBalcon(num) {
     switchTab('generator');
   }
 
-  // Auto-refresh aforo every 30s when credentials are available
+  // Auto-refresh: sync both balcons every 30s
   if (window._afoAutoRefresh) clearInterval(window._afoAutoRefresh);
   window._afoAutoRefresh = setInterval(function() {
-    var cfg = gsGetConfig();
-    if (cfg.apiKey && cfg.spreadsheetId) {
-      gsReadTickets().then(function(t) {
-        if (t && t.length > 0) { saveLocalTickets(t); updateNavBadge(); }
-        _doRenderAforoWidgets();
-      }).catch(function() { _doRenderAforoWidgets(); });
-    } else {
+    Promise.all([fetchBalconTickets(1), fetchBalconTickets(2)]).then(function(results) {
+      if (results[0].length > 0) localStorage.setItem(BALCON_CONFIG[1].storageKey, JSON.stringify(results[0]));
+      if (results[1].length > 0) localStorage.setItem(BALCON_CONFIG[2].storageKey, JSON.stringify(results[1]));
       _doRenderAforoWidgets();
-    }
+    }).catch(function() { _doRenderAforoWidgets(); });
   }, 30000);
 }
 
@@ -5353,7 +5366,8 @@ async function downloadTicketFromTable(btnEl) {
   pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 595, 842);
   var cleanNameSingle = (ticket.name||'').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s]/g,'').trim().replace(/\s+/g,'_').slice(0,25);
     var sessionLabelSingle = buildFileName((ticket.session||'').split(' · ')[0], 35);
-  await smartSavePDF(pdf, '1 entrada - ' + sessionLabelSingle + ' - ' + cleanNameSingle + '.pdf');
+  var balconLabelSingle = buildFileName(balconCfg.recinto, 20);
+  await smartSavePDF(pdf, balconLabelSingle + ' - 1 entrada - ' + sessionLabelSingle + ' - ' + cleanNameSingle + '.pdf');
 
   btnEl.textContent = '\u2b07';
   btnEl.disabled = false;
@@ -5440,7 +5454,8 @@ async function downloadAllFiltered() {
     if (n && !seenNames[n]) { seenNames[n] = true; uniqueNames.push(n); }
   });
   var clientNames = uniqueNames.slice(0, 1).join('');
-  var fname = tickets.length + ' entrada' + (tickets.length > 1 ? 's' : '') + ' - ' + sessionLabel + (clientNames ? ' - ' + clientNames : '') + '.pdf';
+  var balconLabelAll = buildFileName(balconCfg.recinto, 20);
+  var fname = balconLabelAll + ' - ' + tickets.length + ' entrada' + (tickets.length > 1 ? 's' : '') + ' - ' + sessionLabel + (clientNames ? ' - ' + clientNames : '') + '.pdf';
   await smartSavePDF(pdf, fname);
 
   btn.textContent = '⬇ Descargar PDF';
@@ -5524,7 +5539,8 @@ async function downloadBatchFromTable(btnEl) {
 
   var cleanSession = buildFileName(batch[0].session.split(' · ')[0], 30);
   var cleanClient  = buildFileName(clientName, 25);
-  var fname = batch.length + ' entrada' + (batch.length > 1 ? 's' : '') + ' - ' + cleanSession + ' - ' + cleanClient + '.pdf';
+  var balconLabelBatch = buildFileName(balconCfg.recinto, 20);
+  var fname = balconLabelBatch + ' - ' + batch.length + ' entrada' + (batch.length > 1 ? 's' : '') + ' - ' + cleanSession + ' - ' + cleanClient + '.pdf';
   await smartSavePDF(pdf, fname);
 
   btnEl.innerHTML = '&#128230;';
