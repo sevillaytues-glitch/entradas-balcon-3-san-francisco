@@ -205,9 +205,15 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 32px 60px;
+    padding: 32px 40px;
     overflow-y: auto;
     max-height: calc(100vh - 69px);
+  }
+  .ticket-wrapper-outer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
   }
   .preview-label {
     font-size: 11px;
@@ -1885,6 +1891,7 @@
             <input type="number" id="f-counter" value="1" min="1" max="9999" oninput="updatePreview()">
           </div>
         </div>
+    </div><!-- end ticket-wrapper-outer -->
         <div id="id-preview-box" class="id-preview">—</div>
         <div class="btn-group" style="justify-content:space-between;">
           <button class="btn btn-ghost" onclick="resetCounter()">↺ Resetear a 0001</button>
@@ -1912,7 +1919,8 @@
   <main class="panel-preview">
     <div class="preview-label">Vista previa de la entrada</div>
 
-    <div class="ticket-wrapper">
+    <div class="ticket-wrapper-outer">
+    <div class="ticket-wrapper" style="transform:scale(0.78);transform-origin:top center;margin-bottom:-130px;">
       <!-- Este div es el que se exporta a PDF -->
       <div id="ticket-preview">
 
@@ -5002,29 +5010,77 @@ function debugSheetsData() {
 }
 
 function syncAndRefreshAforo() {
-  var cfg = gsGetConfig();
-  var hasSheets = cfg.apiKey && cfg.spreadsheetId;
+  var cfg1 = (function() {
+    var prev = GS_CONFIG_KEY;
+    GS_CONFIG_KEY = BALCON_CONFIG[1].gsConfigKey;
+    var c = gsGetConfig(); GS_CONFIG_KEY = prev; return c;
+  })();
+  var cfg2 = (function() {
+    var prev = GS_CONFIG_KEY;
+    GS_CONFIG_KEY = BALCON_CONFIG[2].gsConfigKey;
+    var c = gsGetConfig(); GS_CONFIG_KEY = prev; return c;
+  })();
 
-  if (hasSheets) {
-    showToast('Sincronizando...');
-    gsReadTickets().then(function(sheetsTickets) {
-      if (sheetsTickets && sheetsTickets.length > 0) {
-        saveLocalTickets(sheetsTickets);
-        updateNavBadge();
-        _doRenderAforoWidgets();
-        showToast('Actualizado: ' + sheetsTickets.length + ' entradas');
-      } else {
-        _doRenderAforoWidgets();
-        showToast('Sin datos en Sheets');
-      }
-    }).catch(function(e) {
-      _doRenderAforoWidgets();
-      showToast('Error: ' + e.message);
-    });
-  } else {
+  if (!cfg1.apiKey && !cfg2.apiKey) {
     _doRenderAforoWidgets();
     showToast('Aforo actualizado (local)');
+    return;
   }
+
+  showToast('Sincronizando ambos balcones...');
+  var total = 0;
+
+  // Sync Balcon 1
+  var p1 = (cfg1.apiKey && cfg1.spreadsheetId) ? (function() {
+    var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + cfg1.spreadsheetId
+      + '/values/' + encodeURIComponent(cfg1.sheetName || 'Entradas')
+      + '?key=' + cfg1.apiKey + '&_=' + Date.now();
+    return fetch(url, { cache: 'no-store' }).then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.values && data.values.length > 1) {
+          var h = data.values[0];
+          var rows = data.values.slice(1).map(function(row) {
+            var obj = {}; h.forEach(function(k,i){ obj[k]=row[i]||''; });
+            return { id:obj.ID||'', name:obj.Nombre||'', company:obj.Empresa||'',
+              type:obj.Tipo||'', session:obj.Sesion||'', price:obj.Precio||'0',
+              status:obj.Estado||'No utilizado', createdAt:obj.FechaCreacion||'',
+              accessedAt:obj.FechaAcceso||'', paymentMethod:obj.FormaPago||'',
+              paymentStatus:obj.EstadoPago||'', paymentDate:obj.FechaPago||'' };
+          });
+          localStorage.setItem(BALCON_CONFIG[1].storageKey, JSON.stringify(rows));
+          total += rows.length;
+        }
+      }).catch(function(){});
+  })() : Promise.resolve();
+
+  // Sync Balcon 2
+  var p2 = (cfg2.apiKey && cfg2.spreadsheetId) ? (function() {
+    var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + cfg2.spreadsheetId
+      + '/values/' + encodeURIComponent(cfg2.sheetName || 'Entradas')
+      + '?key=' + cfg2.apiKey + '&_=' + Date.now();
+    return fetch(url, { cache: 'no-store' }).then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.values && data.values.length > 1) {
+          var h = data.values[0];
+          var rows = data.values.slice(1).map(function(row) {
+            var obj = {}; h.forEach(function(k,i){ obj[k]=row[i]||''; });
+            return { id:obj.ID||'', name:obj.Nombre||'', company:obj.Empresa||'',
+              type:obj.Tipo||'', session:obj.Sesion||'', price:obj.Precio||'0',
+              status:obj.Estado||'No utilizado', createdAt:obj.FechaCreacion||'',
+              accessedAt:obj.FechaAcceso||'', paymentMethod:obj.FormaPago||'',
+              paymentStatus:obj.EstadoPago||'', paymentDate:obj.FechaPago||'' };
+          });
+          localStorage.setItem(BALCON_CONFIG[2].storageKey, JSON.stringify(rows));
+          total += rows.length;
+        }
+      }).catch(function(){});
+  })() : Promise.resolve();
+
+  Promise.all([p1, p2]).then(function() {
+    updateNavBadge();
+    _doRenderAforoWidgets();
+    showToast('Sincronizado: ' + total + ' entradas totales');
+  });
 }
 
 function renderAllAforoWidgets() {
