@@ -2685,10 +2685,10 @@ function updatePreview() {
   var tPayMethod  = document.getElementById('t-payment-method');
   var tPayDate    = document.getElementById('t-payment-date');
   var tPriceBadge = document.getElementById('t-price-badge');
-  if (tPayStatus)  { tPayStatus.textContent = payStatus || '—'; tPayStatus.style.color = payStatus === 'Pendiente' ? '#c53030' : '#276749'; }
+  if (tPayStatus)  { tPayStatus.textContent = payStatus || '—'; tPayStatus.style.color = payStatus === 'Pendiente' ? '#c53030' : (payStatus === 'Pagado' ? '#276749' : '#888'); }
   if (tPayMethod)  tPayMethod.textContent  = payMethod  || '—';
   if (tPayDate)    tPayDate.textContent    = payDate    || '';
-  if (tPriceBadge) tPriceBadge.style.background = payStatus === 'Pendiente' ? '#c53030' : '#276749';
+  if (tPriceBadge) tPriceBadge.style.background = payStatus === 'Pendiente' ? '#c53030' : (payStatus === 'Pagado' ? '#276749' : 'linear-gradient(135deg,#9a7a2e,#c9a84c)');
 
   // Update ticket venue/footer based on active balcon
   var activeCfg = (currentRole === 'admin')
@@ -4013,6 +4013,8 @@ function switchGenBalcon(num) {
   updatePreview();
   renderAllAforoWidgets();
   showToast('Generando para: ' + cfg.recinto);
+  // Force payment field update
+  setTimeout(updatePreview, 50);
 }
 
 function switchTab(tab) {
