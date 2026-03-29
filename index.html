@@ -409,7 +409,7 @@
   /* Cuadrícula de datos secundarios */
   .ticket-data-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 12px 20px;
   }
 
@@ -1975,10 +1975,19 @@
             <div class="ticket-data-grid">
               <div class="ticket-field">
                 <div class="ticket-field-label">Precio</div>
-                <div class="ticket-price-badge">
+                <div class="ticket-price-badge" id="t-price-badge">
                   <span class="ticket-price-amount" id="t-price">0</span>
                   <span class="ticket-price-currency">€</span>
                 </div>
+              </div>
+              <div class="ticket-field">
+                <div class="ticket-field-label">Forma de pago</div>
+                <div class="ticket-field-value small" id="t-payment-method">—</div>
+              </div>
+              <div class="ticket-field">
+                <div class="ticket-field-label">Estado pago</div>
+                <div class="ticket-field-value small" id="t-payment-status" style="font-weight:700;">—</div>
+                <div class="ticket-field-value small" id="t-payment-date" style="font-size:9px;color:#777;"></div>
               </div>
               <div class="ticket-field">
                 <div class="ticket-field-label">Recinto</div>
@@ -2668,6 +2677,19 @@ function updatePreview() {
   document.getElementById('t-qr-label').textContent     = entryID;
 
 
+  // Update payment fields in preview
+  var payStatus   = document.getElementById('f-payment-status') ? document.getElementById('f-payment-status').value : '';
+  var payMethod   = document.getElementById('f-payment-method') ? document.getElementById('f-payment-method').value : '';
+  var payDate     = document.getElementById('f-payment-date')   ? document.getElementById('f-payment-date').value   : '';
+  var tPayStatus  = document.getElementById('t-payment-status');
+  var tPayMethod  = document.getElementById('t-payment-method');
+  var tPayDate    = document.getElementById('t-payment-date');
+  var tPriceBadge = document.getElementById('t-price-badge');
+  if (tPayStatus)  { tPayStatus.textContent = payStatus || '—'; tPayStatus.style.color = payStatus === 'Pendiente' ? '#c53030' : '#276749'; }
+  if (tPayMethod)  tPayMethod.textContent  = payMethod  || '—';
+  if (tPayDate)    tPayDate.textContent    = payDate    || '';
+  if (tPriceBadge) tPriceBadge.style.background = payStatus === 'Pendiente' ? '#c53030' : '#276749';
+
   // Update ticket venue/footer based on active balcon
   var activeCfg = (currentRole === 'admin')
     ? (BALCON_CONFIG[genBalcon] || BALCON_CONFIG[1])
@@ -2992,28 +3014,44 @@ function buildTicketHTML(name, company, type, price, sessionName, sessionDate, s
         <div style="font-family:Arial,sans-serif;font-size:8.5px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:2px;">Empresa / Organización</div>
         <div style="font-size:14px;font-weight:400;color:#333;">${company}</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 16px;">
+        <!-- Precio con color según estado pago -->
         <div>
-          <div style="font-family:Arial,sans-serif;font-size:8.5px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:4px;">Precio</div>
-          <div style="display:inline-block;background:#c9a84c;color:#fff;border-radius:4px;padding:5px 12px 6px;">
-            <span style="font-size:22px;font-weight:700;line-height:1;vertical-align:baseline;">${priceStr}</span><span style="font-family:Arial,sans-serif;font-size:11px;font-weight:600;vertical-align:baseline;margin-left:2px;">€</span>
+          <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:4px;">Precio</div>
+          <div style="display:inline-block;background:${paymentStatus==='Pendiente'?'#c53030':'#276749'};color:#fff;border-radius:4px;padding:4px 10px 5px;">
+            <span style="font-size:20px;font-weight:700;line-height:1;vertical-align:baseline;">${priceStr}</span><span style="font-family:Arial,sans-serif;font-size:10px;font-weight:600;vertical-align:baseline;margin-left:2px;">€</span>
           </div>
         </div>
+        <!-- Forma de pago -->
         <div>
-          <div style="font-family:Arial,sans-serif;font-size:8.5px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:2px;">Recinto</div>
-          <div style="font-size:13px;color:#333;">${cfg.recinto}</div>
+          <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:4px;">Forma de pago</div>
+          <div style="font-size:12px;font-weight:600;color:#1a1a1a;">${paymentMethod||'—'}</div>
         </div>
+        <!-- Estado del pago -->
         <div>
-          <div style="font-family:Arial,sans-serif;font-size:8.5px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:2px;">ID de entrada</div>
-          <div style="font-family:'Courier New',monospace;font-size:10px;color:#555;letter-spacing:0.05em;">${id}</div>
+          <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:4px;">Estado pago</div>
+          <div style="font-size:12px;font-weight:700;color:${paymentStatus==='Pendiente'?'#c53030':'#276749'};">${paymentStatus||'—'}</div>
+          ${paymentDateStr ? `<div style="font-family:Arial,sans-serif;font-size:9px;color:#777;margin-top:2px;">${paymentDateStr}</div>` : ''}
         </div>
+        <!-- Recinto -->
         <div>
-          <div style="font-family:Arial,sans-serif;font-size:8.5px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:2px;">Dirección</div>
-          <div style="font-size:13px;color:#333;">${cfg.address}</div>
+          <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:2px;">Recinto</div>
+          <div style="font-size:11px;color:#333;">${cfg.recinto}</div>
+        </div>
+        <!-- ID de entrada -->
+        <div>
+          <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:2px;">ID de entrada</div>
+          <div style="font-family:'Courier New',monospace;font-size:9px;color:#555;letter-spacing:0.05em;">${id}</div>
+        </div>
+        <!-- Dirección -->
+        <div>
+          <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:2px;">Dirección</div>
+          <div style="font-size:11px;color:#333;">${cfg.address}</div>
         </div>
       </div>
     </div>
-    <!-- QR -->
+    
+<!-- QR -->
     <div style="display:flex;flex-direction:column;align-items:center;gap:7px;justify-content:center;min-width:120px;">
       <div style="background:#fff;padding:6px;border:1px solid #e8e0d0;border-radius:4px;">
         <div class="pdf-qr" data-text="${id}" style="width:100px;height:100px;"></div>
