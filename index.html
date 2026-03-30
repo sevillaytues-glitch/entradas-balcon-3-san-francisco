@@ -2570,9 +2570,9 @@ var ll1 = document.getElementById('login-logo-1'); if(ll1) ll1.src = 'data:image
 var ll2 = document.getElementById('login-logo-2'); if(ll2) ll2.src = 'data:image/jpeg;base64,' + LOGO_B64_2;
 
 // Inyectar imágenes (se actualizan al hacer login)
-document.getElementById('app-logo').src = 'data:image/jpeg;base64,' + LOGO_B64;
-document.getElementById('t-logo').src   = 'data:image/jpeg;base64,' + LOGO_B64;
-document.getElementById('t-eventimg').src = 'data:image/jpeg;base64,' + IMG_B64;
+var _al = document.getElementById('app-logo');    if(_al) _al.src = 'data:image/jpeg;base64,' + LOGO_B64;
+var _tl = document.getElementById('t-logo');      if(_tl) _tl.src = 'data:image/jpeg;base64,' + LOGO_B64;
+var _ti = document.getElementById('t-eventimg');  if(_ti) _ti.src = 'data:image/jpeg;base64,' + IMG_B64;
 
 // ============================================================
 // ESTADO GLOBAL
@@ -4999,7 +4999,7 @@ function doLogout() {
   applyRoleTabs('staff');
   try { sessionStorage.removeItem('bssv_session'); } catch(e) {}
   document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('app-body').style.display = 'none';
+  var appBody = document.querySelector('.app-body'); if(appBody) appBody.style.display = 'none';
 }
 
 // ============================================================
