@@ -1802,13 +1802,14 @@
         <div class="form-row">
           <div class="form-group">
             <label for="f-type">Tipo de entrada</label>
-            <select id="f-type" onchange="updatePreview()">
+            <select id="f-type" onchange="onTypeChange()">
               <option value="General">General</option>
               <option value="VIP">VIP</option>
               <option value="Empresa">Empresa</option>
               <option value="Prensa">Prensa</option>
               <option value="Infantil">Infantil</option>
               <option value="Honorífica">Honorífica</option>
+              <option value="Invitación">Invitación</option>
             </select>
           </div>
           <div class="form-group">
@@ -4611,7 +4612,31 @@ function selectBalcon(num) {
   document.getElementById('login-error').textContent = '';
 }
 
-function doLogin() {
+
+function onTypeChange() {
+  var type = document.getElementById('f-type').value;
+  if (type === 'Invitación') {
+    // Auto-fill: price=0, payment=Pagado, date=today
+    document.getElementById('f-price').value = '0';
+    document.getElementById('f-payment-status').value = 'Pagado';
+    document.getElementById('f-payment-method').value = 'Efectivo';
+    // Set today's date
+    var today = new Date();
+    var dd = String(today.getDate()).padStart(2,'0');
+    var mm = String(today.getMonth()+1).padStart(2,'0');
+    var yyyy = today.getFullYear();
+    document.getElementById('f-payment-date').value = yyyy + '-' + mm + '-' + dd;
+  }
+  updatePreview();
+}
+
+function togglePassVis() {
+  var el = document.getElementById('login-pass');
+  if (!el) return;
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+
   var username = (document.getElementById('login-username').value || '').trim().toLowerCase();
   var pass     = (document.getElementById('login-pass').value || '');
   var errorEl  = document.getElementById('login-error');
@@ -4963,22 +4988,21 @@ function applyRoleTabs(role) {
 
 
 function doLogout() {
-  if (!confirm('Vas a cerrar sesion y volver a la pantalla de seleccion de balcon. Continuar?')) return;
+  if (!confirm('Vas a cerrar sesion y volver a la pantalla de inicio. Continuar?')) return;
   stopScanner();
-  currentBalcon  = 0;
-  selectedBalcon = 0;
-  document.getElementById('login-pass').value = '';
-  var unEl = document.getElementById('login-username'); if(unEl) unEl.value = '';
-  document.getElementById('login-error').textContent = '';
-  document.getElementById('btn-b1').classList.remove('selected');
-  document.getElementById('btn-b2').classList.remove('selected');
-  document.getElementById('btn-admin').classList.remove('selected');
+  if (window._afoAutoRefresh) { clearInterval(window._afoAutoRefresh); window._afoAutoRefresh = null; }
+  currentBalcon = 0;
+  var passEl = document.getElementById('login-pass'); if (passEl) passEl.value = '';
+  var userEl = document.getElementById('login-username'); if (userEl) userEl.value = '';
+  var errEl  = document.getElementById('login-error');  if (errEl)  errEl.textContent = '';
   currentRole = 'staff';
   applyRoleTabs('staff');
-  document.getElementById('login-screen').style.display = 'flex';
   try { sessionStorage.removeItem('bssv_session'); } catch(e) {}
-  if (window._afoAutoRefresh) { clearInterval(window._afoAutoRefresh); window._afoAutoRefresh = null; }
-  switchTab('generator');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app-body').style.display = 'none';
+}
+
+
 }
 
 // ============================================================
