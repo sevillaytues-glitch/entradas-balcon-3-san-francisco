@@ -4636,7 +4636,7 @@ function togglePassVis() {
   el.type = el.type === 'password' ? 'text' : 'password';
 }
 
-
+function doLogin() {
   var username = (document.getElementById('login-username').value || '').trim().toLowerCase();
   var pass     = (document.getElementById('login-pass').value || '');
   var errorEl  = document.getElementById('login-error');
@@ -5000,9 +5000,6 @@ function doLogout() {
   try { sessionStorage.removeItem('bssv_session'); } catch(e) {}
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app-body').style.display = 'none';
-}
-
-
 }
 
 // ============================================================
