@@ -1693,7 +1693,7 @@
         <div class="login-pass-group" style="margin-top:6px;">
           <input type="password" id="login-pass" placeholder="Introduce la contraseña..."
             autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-          <button onclick="togglePassVis()" class="btn-pass-toggle" aria-label="Mostrar contraseña">
+          <button type="button" onclick="togglePassVis()" class="btn-pass-toggle" aria-label="Mostrar contraseña">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
@@ -1701,7 +1701,7 @@
     </div>
 
     <div id="login-error" style="color:#e53e3e;font-size:12px;margin-top:8px;min-height:18px;text-align:center;"></div>
-    <button class="btn btn-primary login-submit" onclick="doLogin()" style="margin-top:16px;">
+    <button type="button" class="btn btn-primary login-submit" onclick="doLogin()" style="margin-top:16px;">
       Acceder
     </button>
     <button onclick="runDiagnostic()" style="margin-top:8px;width:100%;padding:8px;background:transparent;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text-muted);cursor:pointer;">
