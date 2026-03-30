@@ -3032,7 +3032,7 @@ function buildTicketHTML(name, company, type, price, sessionName, sessionDate, s
         <div>
           <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:0.14em;color:#9a7a2e;font-weight:500;margin-bottom:4px;">Estado pago</div>
           <div style="font-size:12px;font-weight:700;color:${paymentStatus==='Pendiente'?'#c53030':'#276749'};">${paymentStatus||'—'}</div>
-          ${paymentDateStr ? `<div style="font-family:Arial,sans-serif;font-size:9px;color:#777;margin-top:2px;">${paymentDateStr}</div>` : ''}
+          ${paymentDateStr ? '<div style="font-family:Arial,sans-serif;font-size:9px;color:#777;margin-top:2px;">' + paymentDateStr + '</div>' : ''}
         </div>
         <!-- Recinto -->
         <div>
