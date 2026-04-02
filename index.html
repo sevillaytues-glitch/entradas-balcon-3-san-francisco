@@ -2090,6 +2090,9 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         Excel
       </button>
+      <button type="button" class="btn btn-ghost" onclick="detectAndRemoveDuplicates()" style="display:flex;align-items:center;gap:6px;font-size:13px;padding:9px 14px;color:#c53030;border-color:#c53030;">
+        🔍 Detectar duplicados
+      </button>
       <button class="btn btn-ghost" onclick="downloadAllFiltered()" id="btn-dl-all" style="display:flex;align-items:center;gap:6px;font-size:13px;padding:9px 14px;">
         ⬇ Descargar PDF
       </button>
@@ -2818,8 +2821,19 @@ async function downloadPDF() {
     // ── Registrar entradas: Sheets es la fuente de verdad ──
     const fullSession = sessionName + ' · ' + sessionDate + ' ' + sessionTime;
     const batchId = new Date().toISOString();
-    // Get credentials directly from the active balcon (not from global GS_CONFIG_KEY)
-    var pdfBalconNum = (currentRole === 'admin') ? genBalcon : currentBalcon;
+    // Safety check: verify active balcon before generating
+    var pdfBalconNum;
+    if (currentRole === 'admin') {
+      // Read from DOM dataset (most reliable — set by switchGenBalcon)
+      var genSel = document.getElementById('gen-balcon-selector');
+      var domBalcon = genSel ? parseInt(genSel.dataset.activeBalcon) : 0;
+      // Also check button state as backup
+      var b2Active = document.getElementById('gen-btn-b2') && document.getElementById('gen-btn-b2').classList.contains('active');
+      pdfBalconNum = domBalcon || (b2Active ? 2 : 1);
+      genBalcon = pdfBalconNum; // sync global
+    } else {
+      pdfBalconNum = currentBalcon;
+    }
     var pdfBalconNumStr = String(pdfBalconNum);
     var lsCredRaw = localStorage.getItem(BALCON_CONFIG[pdfBalconNum].gsConfigKey);
     var lsCred = lsCredRaw ? JSON.parse(lsCredRaw) : {};
@@ -3974,6 +3988,10 @@ function switchGenBalcon(num) {
   genBalcon = num;
   var cfg = BALCON_CONFIG[num];
 
+  // Store in DOM for reliable reading during PDF generation
+  var genSelector = document.getElementById('gen-balcon-selector');
+  if (genSelector) genSelector.dataset.activeBalcon = num;
+
   // Update button states
   document.getElementById('gen-btn-b1').classList.toggle('active', num === 1);
   document.getElementById('gen-btn-b2').classList.toggle('active', num === 2);
@@ -4774,6 +4792,74 @@ async function runDiagnostic() {
 }
 
 // Fetch tickets for one balcon directly from its Sheet
+function detectAndRemoveDuplicates() {
+  // Check both balcons
+  var results = [];
+  [1, 2].forEach(function(bn) {
+    var sk = BALCON_CONFIG[bn].storageKey;
+    var tickets = [];
+    try { tickets = JSON.parse(localStorage.getItem(sk) || '[]'); } catch(e) {}
+    if (!tickets.length) return;
+
+    // Find duplicates by ID
+    var seen = {}; var dupes = [];
+    tickets.forEach(function(t) {
+      if (seen[t.id]) { dupes.push(t); }
+      else seen[t.id] = true;
+    });
+
+    if (dupes.length > 0) {
+      results.push('Balcón ' + bn + ': ' + dupes.length + ' duplicados encontrados:');
+      dupes.forEach(function(t) { results.push('  • ' + t.id + ' — ' + t.name + ' — ' + t.session); });
+    } else {
+      results.push('Balcón ' + bn + ': sin duplicados ✓');
+    }
+  });
+
+  if (!results.length) { showToast('No se encontraron duplicados'); return; }
+
+  var msg = results.join('\n') + '\n\n¿Eliminar los duplicados?';
+  if (!confirm(msg)) return;
+
+  // Remove duplicates from both balcons
+  var totalRemoved = 0;
+  [1, 2].forEach(function(bn) {
+    var sk = BALCON_CONFIG[bn].storageKey;
+    var tickets = [];
+    try { tickets = JSON.parse(localStorage.getItem(sk) || '[]'); } catch(e) { return; }
+
+    var seen = {}; var clean = [];
+    tickets.forEach(function(t) {
+      if (!seen[t.id]) { seen[t.id] = true; clean.push(t); }
+      else totalRemoved++;
+    });
+
+    localStorage.setItem(sk, JSON.stringify(clean));
+
+    // Delete from Sheets too
+    var idsToDelete = tickets.filter(function(t,i,a) {
+      return a.findIndex(function(x){ return x.id===t.id; }) !== i;
+    }).map(function(t){ return t.id; });
+
+    if (idsToDelete.length > 0) {
+      var lsRaw = localStorage.getItem(BALCON_CONFIG[bn].gsConfigKey);
+      var creds = lsRaw ? JSON.parse(lsRaw) : {};
+      var def = SHEETS_DEFAULTS[String(bn)] || {};
+      var scriptUrl = creds.appsScriptUrl || def.appsScriptUrl || '';
+      if (scriptUrl) {
+        gsPostToScript(scriptUrl, { action: 'deleteTickets', ids: idsToDelete })
+          .catch(function() {});
+      }
+    }
+  });
+
+  _doRenderAforoWidgets();
+  renderAccessTable();
+  updateNavBadge();
+  showToast('✓ ' + totalRemoved + ' duplicados eliminados');
+}
+
+
 function fetchBalconTickets(balconNum) {
   // Read credentials directly from SHEETS_DEFAULTS or localStorage for this balcon
   var bCfg = BALCON_CONFIG[balconNum];
