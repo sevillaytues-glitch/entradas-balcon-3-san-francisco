@@ -1795,8 +1795,8 @@
             <input type="text" id="f-name" placeholder="Ej: Juan García López" oninput="updatePreview()">
           </div>
           <div class="form-group">
-            <label for="f-company">Empresa / Organización</label>
-            <input type="text" id="f-company" placeholder="Ej: Empresa S.L." oninput="updatePreview()">
+            <label for="f-company">Empresa / Organización / Agencia / Hotel</label>
+            <input type="text" id="f-company" placeholder="Ej: Empresa S.L., Hotel..." oninput="updatePreview()">
           </div>
         </div>
         <div class="form-row">
@@ -1804,12 +1804,10 @@
             <label for="f-type">Tipo de entrada</label>
             <select id="f-type" onchange="onTypeChange()">
               <option value="General">General</option>
-              <option value="VIP">VIP</option>
-              <option value="Empresa">Empresa</option>
-              <option value="Prensa">Prensa</option>
               <option value="Infantil">Infantil</option>
-              <option value="Honorífica">Honorífica</option>
               <option value="Invitación">Invitación</option>
+              <option value="Organización">Organización</option>
+              <option value="Staff">Staff</option>
             </select>
           </div>
           <div class="form-group">
@@ -1850,6 +1848,8 @@
               <option value="Transferencia">Transferencia</option>
               <option value="Bizum">Bizum</option>
               <option value="Efectivo">Efectivo</option>
+              <option value="Crédito">Crédito</option>
+              <option value="Gratuita">Gratuita</option>
             </select>
           </div>
           <div class="form-group">
@@ -1857,6 +1857,7 @@
             <select id="f-payment-status" onchange="updatePreview()">
               <option value="Pagado">Pagado</option>
               <option value="Pendiente">Pendiente</option>
+              <option value="Sin Pago">Sin Pago</option>
             </select>
           </div>
         </div>
@@ -1969,7 +1970,7 @@
             </div>
 
             <div class="ticket-field">
-              <div class="ticket-field-label">Empresa / Organización</div>
+              <div class="ticket-field-label">Empresa / Org. / Agencia</div>
               <div class="ticket-field-value small" id="t-company">—</div>
             </div>
 
@@ -4635,12 +4636,10 @@ function selectBalcon(num) {
 
 function onTypeChange() {
   var type = document.getElementById('f-type').value;
-  if (type === 'Invitación') {
-    // Auto-fill: price=0, payment=Pagado, date=today
+  if (type === 'Invitación' || type === 'Organización' || type === 'Staff') {
     document.getElementById('f-price').value = '0';
-    document.getElementById('f-payment-status').value = 'Pagado';
-    document.getElementById('f-payment-method').value = 'Efectivo';
-    // Set today's date
+    document.getElementById('f-payment-status').value = 'Sin Pago';
+    document.getElementById('f-payment-method').value = 'Gratuita';
     var today = new Date();
     var dd = String(today.getDate()).padStart(2,'0');
     var mm = String(today.getMonth()+1).padStart(2,'0');
